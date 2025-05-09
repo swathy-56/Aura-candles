@@ -4,57 +4,71 @@ const User=require('../../models/userSchema');
 
 const customerInfo = async (req, res) => {
     try {
-        console.log("Fetching customers...");
-
-        const customers = await User.find(); // Fetch all customers
-        console.log("Customers fetched:", customers); // Log fetched data
+        const searchQuery = req.query.search || '';
+        let query = {};
+        if (searchQuery) {
+            query = {
+                $or: [
+                    { name: { $regex: searchQuery, $options: 'i' } }, // Case-insensitive search
+                    { email: { $regex: searchQuery, $options: 'i' } },
+                    { phone: { $regex: searchQuery, $options: 'i' } }
+                ]
+            };
+        }
 
         const currentPage = parseInt(req.query.page) || 1;
         const pageSize = 10;
-        const totalCustomers = await User.countDocuments();
+        const totalCustomers = await User.countDocuments(query);
         const totalPages = Math.ceil(totalCustomers / pageSize);
 
-        // ✅ Log before rendering to check if `customers` exists
-        console.log("Data sent to EJS:", { data: customers, totalPages, currentPage });
+        const customers = await User.find(query)
+            .sort({ creation: -1 }) // Sort by creation date, descending (latest first)
+            .skip((currentPage - 1) * pageSize)
+            .limit(pageSize);
 
         res.render("customers", {
-            data: customers,  // Ensure this is included
+            data: customers,
             totalPages,
-            currentPage
+            currentPage,
+            searchQuery // Pass searchQuery to retain it in the form
         });
-
     } catch (error) {
         console.error("Error fetching customers:", error);
         res.status(500).send("Server Error");
-        res.redirect('/pageerror');
+        res.redirect('/admin/pageerror');
     }
 };
 
-
-const customerBlocked=async(req,res)=>{
+const customerBlocked = async (req, res) => {
     try {
-        
-        let id=req.query.id;
-        await User.updateOne({_id:id},{$set:{isBlocked:true}});
-        res.redirect('/admin/users')
+        const { id } = req.body;
+        if (!id || id.length !== 24) {
+            return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+        }
+
+        await User.updateOne({ _id: id }, { $set: { isBlocked: true } });
+        return res.status(200).json({ success: true, message: 'Customer blocked successfully' }); // ✅ Correct response
     } catch (error) {
-        res.redirect('/pageerror');
+        console.error('Error blocking customer:', error);
+        return res.status(500).json({ success: false, message: 'Error blocking customer' });
     }
 };
 
-
-
-const customerunBlocked=async(req,res)=>{
+const customerUnBlocked = async (req, res) => {
     try {
-        
-       let id=req.query.id;
-       await User.updateOne({_id:id},{$set:{isBlocked:false}});
-       res.redirect('/admin/users')
-    
+        const { id } = req.body;
+        if (!id || id.length !== 24) {
+            return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+        }
+
+        await User.updateOne({ _id: id }, { $set: { isBlocked: false } });
+        return res.status(200).json({ success: true, message: 'Customer unblocked successfully' }); // ✅ Correct response
     } catch (error) {
-        res.redirect('/pageerror');
+        console.error('Error unblocking customer:', error);
+        return res.status(500).json({ success: false, message: 'Error unblocking customer' });
     }
-}
+};
+
 
 
 
@@ -62,5 +76,5 @@ const customerunBlocked=async(req,res)=>{
 module.exports={
     customerInfo,
     customerBlocked,
-    customerunBlocked
+    customerUnBlocked
 }

@@ -2,21 +2,64 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-6 mt-60">
-            <form method="post" action="/admin/editCategory/<%=category._id%>">
+            <form id="editCategoryForm">
                 <div class="d-grid text-end mt-30 col-md-5">
                     <button class="btn btn-primary" type="submit">Update category</button>
                 </div>
                 <div class="mb-4 mt-30">
                     <label for="product_name" class="form-label">Name</label>
-                    <input type="text" name="categoryName" value="<%=category.name%>" class="form-control border" />
+                    <input type="text" name="categoryName" id="categoryName" value="<%=category.name%>" class="form-control border" required />
                 </div>
                 
                 <div class="mb-4">
                     <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control border"><%=category.description%></textarea>
+                    <textarea name="description" id="description" class="form-control border" required><%=category.description%></textarea>
                 </div>
             </form>
+            
         </div>
     </div>
 </div>
+<script>
+    
+    document.getElementById('editCategoryForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const categoryId = '<%= category._id %>';
+        const categoryName = document.getElementById('categoryName').value.trim();
+        const description = document.getElementById('description').value.trim();
+
+        if (!categoryName || !description) {
+            alert('Please fill in all fields.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/admin/editCategory/${categoryId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    categoryName,
+                    description
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                alert('Category updated successfully!');
+                window.location.href = '/admin/category';
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Error updating category');
+            }
+        } catch (error) {
+            console.error('Error updating category:', error);
+            alert('An error occurred while updating the category.');
+        }
+    });
+</script>
+
+
 <%- include("../../views/partials/admin/footer") %>

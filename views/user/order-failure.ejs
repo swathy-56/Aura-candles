@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Transaction Failure</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar (Exact from account.ejs) */
+        .sidebar {
+            height: 100vh;
+            width: 250px;
+            position: fixed;
+            background: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: white;
+            display: block;
+        }
+        .sidebar a:hover {
+            background: #495057;
+        }
+
+        /* Content */
+        .content {
+            margin-left: 260px;
+            padding: 30px;
+            min-height: 100vh;
+            width: calc(100% - 260px);
+        }
+
+        /* Breadcrumb Styling (Exact from account.ejs) */
+        .breadcrumb {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .breadcrumb-item a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
+        .breadcrumb-item.active {
+            color: #6c757d;
+        }
+
+        /* Failure Container */
+        .failure-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 25px;
+            text-align: center;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid #dee2e6;
+        }
+
+        .failure-illustration {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+        }
+
+        h2 {
+            color: #dc3545; /* Red for failure */
+            margin: 20px 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        p {
+            color: #6c757d;
+            margin: 10px 0;
+            font-size: 1rem;
+        }
+
+        .failure-reason {
+            color: #495057;
+            font-weight: 500;
+            font-size: 1.1rem;
+            background: #f8d7da;
+            padding: 8px 15px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        /* Buttons */
+        .action-buttons {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .failure-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .retry-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+        }
+        .retry-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .details-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+        }
+        .details-btn:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            .content {
+                margin-left: 200px;
+                width: calc(100% - 200px);
+            }
+        }
+        @media (max-width: 576px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                box-shadow: none;
+            }
+            .content {
+                margin-left: 0;
+                width: 100%;
+                padding: 15px;
+            }
+            .failure-container {
+                padding: 15px;
+            }
+            .action-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar (Exact from account.ejs) -->
+        <div class="sidebar">
+            <h4 class="text-center text-white">User Dashboard</h4>
+            <a href="/account">Account</a>
+            <a href="/address-management">Address</a>
+            <a href="/orders">Orders</a>
+            <a href="/cart">Cart</a>
+            <a href="/wallet">Wallet</a>
+            <a href="/wishlist">Wishlist</a>
+           
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Breadcrumb Navigation -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Order Failure</li>
+                </ol>
+            </nav>
+
+            <div class="failure-container">
+                <!-- Illustration (Using a simple SVG for demonstration) -->
+                <svg class="failure-illustration" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="#dc3545"/>
+                </svg>
+
+                <h2>Order Transaction Failed</h2>
+                <p>Sorry, we couldn't process your order at this time.</p>
+                <p class="failure-reason"><%= reason || "Unknown error occurred" %></p>
+                <div class="action-buttons">
+                    <button class="failure-btn retry-btn" onclick="window.location.href='/checkout'">Retry Payment</button>
+                    <a href="/orders" class="failure-btn details-btn">View Order Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

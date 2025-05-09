@@ -1,145 +1,228 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Login</title>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="/css/style.css" />
-  <style>
-    body,
-    html {
-      height: 100%;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-image: url('/img/adminlogin.png');
-      background-size: cover;
-      background-position: center;
-      font-family: 'Nunito Sans', sans-serif;
-       color: white;
-    }
-    .login-container {
-      width: 100%;
-      max-width: 500px;
-      padding: 20px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      background-color: hsl(193, 80%, 17%);
-      border-radius: 8px;
-    }
-    .error-message {
-      color: red;
-      font-size: 0.875rem;
-    }
-    .text-center{
-      color: white;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/bootstrap.min.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                        url('/img/adminlogin.png') no-repeat center/cover;
+            font-family: 'Nunito Sans', sans-serif;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 2.5rem;
+            background: rgba(23, 107, 135, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+            margin: 20px;
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
+        }
+
+        .text-center {
+            color: #ffffff;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            color: #e0f1f5;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+            background: #ffffff;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            min-height: 1rem;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .alert-danger {
+            background: rgba(231, 76, 60, 0.9);
+            border: none;
+            color: white;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 576px) {
+            .login-container {
+                padding: 1.5rem;
+                margin: 15px;
+            }
+
+            .text-center {
+                font-size: 1.5rem;
+            }
+
+            .form-control {
+                padding: 10px 12px;
+            }
+
+            .btn-primary {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .login-container {
+                padding: 1rem;
+            }
+
+            .text-center {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="login-container">
-    <h2 class="text-center">Admin Login</h2>
-    <% if (message) { %>
-    <div class="alert alert-danger text-center"><%= message %></div>
-    <% } %>
-    <form id="adminLoginForm" >
-      <div class="form-group">
-        <label for="adminEmail">Email address</label>
-        <input
-          type="email"
-          class="form-control"
-          id="adminEmail"
-          name="email"
-          required
-        />
-        <div id="emailError" class="error-message"></div>
-      </div>
-      <div class="form-group">
-        <label for="adminPassword">Password</label>
-        <input
-          type="password"
-          class="form-control"
-          id="adminPassword"
-          name="password"
-          required
-        />
-        <div id="passwordError" class="error-message"></div>
-      </div>
-      <button type="submit" class="btn btn-primary btn-block">Log In</button>
-    </form>
-  </div>
-  <script src="/js/jquery.min.js"></script>
-  <script src="/js/bootstrap.bundle.min.js"></script>
-  <!-- <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const adminLoginForm = document.getElementById("adminLoginForm");
-      const emailField = document.getElementById("adminEmail");
-      const passwordField = document.getElementById("adminPassword");
-      const emailError = document.getElementById("emailError");
-      const passwordError = document.getElementById("passwordError");
+    <div class="login-container">
+        <h2 class="text-center">Admin Login</h2>
+        <% if (message) { %>
+            <div class="alert alert-danger text-center"><%= message %></div>
+        <% } %>
+        <form id="adminLoginForm">
+            <div class="form-group">
+                <label for="adminEmail">Email Address</label>
+                <input
+                    type="email"
+                    class="form-control"
+                    id="adminEmail"
+                    name="email"
+                    required
+                    placeholder="Enter your email"
+                />
+                <div id="emailError" class="error-message"></div>
+            </div>
+            <div class="form-group">
+                <label for="adminPassword">Password</label>
+                <input
+                    type="password"
+                    class="form-control"
+                    id="adminPassword"
+                    name="password"
+                    required
+                    placeholder="Enter your password"
+                />
+                <div id="passwordError" class="error-message"></div>
+            </div>
+            <button type="submit" class="btn btn-primary">Log In</button>
+        </form>
+    </div>
 
-      adminLoginForm.addEventListener("submit", function (event) {
-        let isValid = true;
-        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-        if (!emailPattern.test(emailField.value)) {
-          emailError.textContent = "Invalid email format";
-          isValid = false;
-        } else {
-          emailError.textContent = "";
-        }
-        if (passwordField.value.length < 8) {
-          passwordError.textContent =
-            "Password should contain at least 8 characters";
-          isValid = false;
-        } else {
-          passwordError.textContent = "";
-        }
+    <script src="public/js/jquery.min.js"></script>
+    <script src="public/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById("adminLoginForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
 
-        if (!isValid) {
-          event.preventDefault();
-        }
-      });
-    });
-  </script> -->
-  <script>
-    document.getElementById("adminLoginForm").addEventListener("submit", async function(event) {
-      event.preventDefault();
-  
-      const email = document.getElementById("adminEmail").value.trim();
-      const password = document.getElementById("adminPassword").value.trim();
-  
-      // Create an object to send
-      const formData = { email, password };
-  
-      try {
-        const response = await fetch("/admin/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json" // 🔹 Fix: Specify JSON format
-          },
-          body: JSON.stringify(formData) // 🔹 Fix: Convert data to JSON string
+            const email = document.getElementById("adminEmail").value.trim();
+            const password = document.getElementById("adminPassword").value.trim();
+            const emailError = document.getElementById("emailError");
+            const passwordError = document.getElementById("passwordError");
+            
+            // Client-side validation
+            let isValid = true;
+            const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+            
+            if (!emailPattern.test(email)) {
+                emailError.textContent = "Invalid email format";
+                isValid = false;
+            } else {
+                emailError.textContent = "";
+            }
+
+            if (password.length < 8) {
+                passwordError.textContent = "Password must be at least 8 characters";
+                isValid = false;
+            } else {
+                passwordError.textContent = "";
+            }
+
+            if (!isValid) return;
+
+            const formData = { email, password };
+
+            try {
+                const response = await fetch("/admin/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = data.redirectUrl || "/inventory";
+                } else {
+                    alert(data.message || "Login failed");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Something went wrong. Please try again.");
+            }
         });
-  
-        const data = await response.json(); // Parse JSON response
-  
-        if (response.ok) {
-          // 🔹 Success: Redirect to the dashboard
-          window.location.href = data.redirectUrl;
-        } else {
-          // 🔹 Error: Show message
-          alert(data.message);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        alert("Something went wrong. Please try again.");
-      }
-    });
-  </script>
-  
+    </script>
 </body>
 </html>

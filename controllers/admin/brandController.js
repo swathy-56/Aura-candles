@@ -17,7 +17,7 @@ const getBrandPage=async(req,res)=>{
             totalBrands:totalBrands
         })
     } catch (error) {
-        res.redirect('/pageerror');
+        res.redirect('/admin/pageerror');
     }
 
 
@@ -38,12 +38,56 @@ const addBrand=async(req,res)=>{
             res.redirect('/admin/brands');
         }
     } catch (error) {
-        res.redirect('/pageerror');
+        res.redirect('/admin/pageerror');
     }
-}
+};
+
+
+const blockBrand = async (req, res) => {
+    try {
+        const { id } = req.body; // ✅ Get from req.body
+        await Brand.updateOne({ _id: id }, { $set: { isBlocked: true } });
+        res.status(200).json({ success: true, message: 'Brand blocked successfully' });
+    } catch (error) {
+        console.error('Error blocking brand:', error);
+        res.status(500).json({ success: false, message: 'Error blocking brand' });
+    }
+};
+
+const unBlockBrand = async (req, res) => {
+    try {
+        const { id } = req.body; // ✅ Get from req.body
+        await Brand.updateOne({ _id: id }, { $set: { isBlocked: false } });
+        res.status(200).json({ success: true, message: 'Brand unblocked successfully' });
+    } catch (error) {
+        console.error('Error unblocking brand:', error);
+        res.status(500).json({ success: false, message: 'Error unblocking brand' });
+    }
+};
+
+
+
+const deleteBrand = async (req, res) => {
+    try {
+        const { id } = req.body; // ✅ Get from req.body
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Invalid brand ID' });
+        }
+
+        await Brand.deleteOne({ _id: id });
+        res.status(200).json({ success: true, message: 'Brand deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting brand:', error);
+        res.status(500).json({ success: false, message: 'Error deleting brand' });
+    }
+};
+
 
 
 module.exports={
     getBrandPage,
-    addBrand
+    addBrand,
+    blockBrand,
+    unBlockBrand,
+    deleteBrand
 }

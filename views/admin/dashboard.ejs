@@ -1,10 +1,295 @@
 <%- include("../../views/partials/admin/header") %>
 <section class="content-main">
     <div class="content-header">
-        <div>
-            <h2 class="content-title card-title">Dashboard </h2>
+        <h2 class="content-title card-title">Dashboard</h2>
+        <p>Welcome to your admin dashboard</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Users</h5>
+                    <h3 id="totalUsers">0</h3>
+                    <p><span class="text-success">↑ 5.3% growth</span></p>
+                </div>
+            </div>
         </div>
-       
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Products</h5>
+                    <h3 id="totalProducts">0</h3>
+                    <p><span class="text-success">↑ 7.1% growth</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Orders</h5>
+                    <h3 id="totalOrders">0</h3>
+                    <p><span class="text-success">↑ 0.0% growth</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Revenue</h5>
+                    <h3 id="totalRevenue">₹0</h3>
+                    <p><span class="text-success">↑ 0% growth</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Total Discount</h5>
+                    <h3 id="totalDiscount">0</h3>
+                    <p></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue & Orders Overview -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Revenue & Orders Overview</h5>
+            <div class="row">
+                <div class="col-md-10">
+                    <canvas id="revenueOrdersChart"></canvas>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="timeFilter">
+                        <option value="daily">Daily</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly" selected>Yearly</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products, Categories, Brands, and Recent Orders -->
+    <div class="row">
+        <!-- Top Products -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Top Products</h5>
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Categories -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Top Categories</h5>
+                    <canvas id="topCategoriesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Brands -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Top Brands</h5>
+                    <canvas id="topBrandsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders Table -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Recent Orders</h5>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Product</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recentOrdersTable">
+                    <!-- Populated dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Download Report Button -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <button class="btn btn-success" id="downloadReport">Download Report</button>
+        </div>
     </div>
 </section>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/js/dashboard.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    let revenueOrdersChart, topProductsChart, topCategoriesChart, topBrandsChart;
+
+    // Initialize Revenue & Orders Chart (Dual-Axis)
+    function initRevenueOrdersChart(data) {
+        const ctx = document.getElementById('revenueOrdersChart').getContext('2d');
+        if (revenueOrdersChart) {
+            revenueOrdersChart.destroy();
+        }
+        revenueOrdersChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Revenue (₹)',
+                        data: data.revenue,
+                        borderColor: '#007bff',
+                        yAxisID: 'y',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Orders',
+                        data: data.orders,
+                        borderColor: '#ff6384',
+                        yAxisID: 'y1',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Revenue (₹)'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Orders'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Initialize Pie Chart
+    function initPieChart(elementId, chartInstance, data, labels) {
+        const ctx = document.getElementById(elementId).getContext('2d');
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+        chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff']
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+        return chartInstance;
+    }
+
+    // Fetch Dashboard Data
+    function fetchDashboardData(filter = 'yearly') {
+        fetch(`/admin/dashboard-data?filter=${filter}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update Summary Cards
+                document.getElementById('totalUsers').textContent = data.summary.totalUsers;
+                document.getElementById('totalProducts').textContent = data.summary.totalProducts;
+                document.getElementById('totalOrders').textContent = data.summary.totalOrders;
+                document.getElementById('totalRevenue').textContent = `₹${data.summary.totalRevenue.toLocaleString()}`;
+                document.getElementById('totalDiscount').textContent = data.summary.totalDiscount;
+
+                // Update Revenue & Orders Chart
+                initRevenueOrdersChart({
+                    labels: data.revenueOrders.labels,
+                    revenue: data.revenueOrders.revenue,
+                    orders: data.revenueOrders.orders
+                });
+
+                // Update Top Products Pie Chart
+                topProductsChart = initPieChart(
+                    'topProductsChart',
+                    topProductsChart,
+                    data.topProducts.map(p => p.sales),
+                    data.topProducts.map(p => p.name)
+                );
+
+                // Update Top Categories Pie Chart
+                topCategoriesChart = initPieChart(
+                    'topCategoriesChart',
+                    topCategoriesChart,
+                    data.topCategories.map(c => c.sales),
+                    data.topCategories.map(c => c.name)
+                );
+
+                // Update Top Brands Pie Chart
+                topBrandsChart = initPieChart(
+                    'topBrandsChart',
+                    topBrandsChart,
+                    data.topBrands.map(b => b.sales),
+                    data.topBrands.map(b => b.name)
+                );
+
+                // Update Recent Orders Table
+                document.getElementById('recentOrdersTable').innerHTML = data.recentOrders
+                    .map(order => `
+                        <tr>
+                            <td>${order.orderId}</td>
+                            <td>${order.customer}</td>
+                            <td>${order.product}</td>
+                            <td>₹${order.amount}</td>
+                            <td><span class="badge bg-warning">${order.status}</span></td>
+                            <td>${new Date(order.date).toLocaleString()}</td>
+                        </tr>
+                    `)
+                    .join('');
+            });
+    }
+
+    // Filter Change Handler
+    document.getElementById('timeFilter').addEventListener('change', function(e) {
+        fetchDashboardData(e.target.value);
+    });
+
+    // Download Report
+    document.getElementById('downloadReport').addEventListener('click', function() {
+        window.location.href = '/admin/download-report';
+    });
+
+    // Initial Load
+    fetchDashboardData();
+});
+</script>
 <%- include("../../views/partials/admin/footer") %>

@@ -1,4 +1,4 @@
-<%- include("../../views/partials/admin/header") %>
+ <%- include("../../views/partials/admin/header") %>
 <style>
   .pagination-container {
     text-align: center;
@@ -68,59 +68,46 @@
                 </tr>
               </thead>
               <tbody>
-                <%data.reverse().forEach((brand,index)=>{%>
+                <% data.reverse().forEach((brand, index) => { %>
                 <tr>
-                  <td class="text-start"><%=brand.brandName%></td>
+                  <td class="text-start"><%= brand.brandName %></td>
                   <td class="text-start">
                     <div
                       class="d-flex align-items-center justify-content-center"
-                      style="
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 50%;
-                        overflow: hidden;
-                      "
+                      style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden;"
                     >
                       <img
-                        src="/uploads/re-image/<%=brand.brandImage[0]%>"
-                        alt="<%=brand.brandName%>"
+                        src="/uploads/re-image/<%= brand.brandImage[0] %>"
+                        alt="<%= brand.brandName %>"
                         class="img-fluid rounded-circle"
                         style="width: 100%; height: auto"
                       />
                     </div>
                   </td>
                   <td class="text-start">
-                    <span
-                      class="badge rounded-pill alert-danger"
-                      style="width: 60px"
-                      >Blocked</span
-                    >
-
-                    <span
-                      class="badge rounded-pill alert-success"
-                      style="width: 60px"
-                      >Active</span
-                    >
+                    <% if (brand.isBlocked === true) { %>
+                    <span class="badge rounded-pill alert-danger" style="width: 60px">Blocked</span>
+                    <% } else { %>
+                    <span class="badge rounded-pill alert-success" style="width: 60px">Active</span>
+                    <% } %>
                   </td>
                   <td class="text-start">
-                    <button class="btn btn-danger" style="width: 90px">
-                      <a href="" class="text-white">Block</a>
+                    <% if (brand.isBlocked === false) { %>
+                      <button class="btn btn-danger" style="width: 90px" onclick="updateBrandStatus('<%= brand._id %>', true)">
+                        Block
                     </button>
-
-                    <button class="btn btn-success" style="width: 90px">
-                      <a href="" class="text-white">Unblock</a>
+                    <% } else { %>
+                      <button class="btn btn-success" style="width: 90px" onclick="updateBrandStatus('<%= brand._id %>', false)">
+                        Unblock
                     </button>
-
-                    <button
-                      class="btn btn-danger"
-                      style="width: 90px"
-                      onclick=""
-                    >
-                      <a href="" class="text-white">Delete</a>
+                    <% } %>
+                    
+                    <button class="btn btn-danger" style="width: 90px" onclick="confirmDelete('<%= brand._id %>')">
+                      <span class="text-white">Delete</span>
                     </button>
                   </td>
                 </tr>
-                <%})%>
+                <% }) %>
               </tbody>
             </table>
           </div>
@@ -128,8 +115,74 @@
       </div>
     </div>
   </div>
-  <div class="pagination-container">
-</div>
+  <div class="pagination-container"></div>
 </section>
-<%- include("../../views/partials/admin/footer") %>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  async function updateBrandStatus(brandId, isBlocking) {
+    const url = isBlocking ? '/admin/blockBrand' : '/admin/unBlockBrand';
+    const confirmMessage = isBlocking
+        ? 'Are you sure you want to block this brand?'
+        : 'Are you sure you want to unblock this brand?';
 
+    if (confirm(confirmMessage)) {
+        try {
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: brandId })
+            });
+
+            if (response.ok) {
+                window.location.reload(); // Reload to update status
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Error processing request');
+            }
+        } catch (error) {
+            console.error('Error updating brand status:', error);
+            alert('Something went wrong. Please try again.');
+        }
+    }
+}
+
+
+async function confirmDelete(brandId) {
+    Swal.fire({
+        title: "Are you sure?",
+        text: "You won't be able to revert this!",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Yes, delete it!"
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/admin/deleteBrand`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: brandId })
+                });
+
+                if (response.ok) {
+                    Swal.fire('Deleted!', 'Brand has been deleted.', 'success').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Error!', 'Error deleting brand.', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting brand:', error);
+                Swal.fire('Error!', 'An error occurred while deleting the brand.', 'error');
+            }
+        }
+    });
+}
+
+</script>
+<%- include("../../views/partials/admin/footer") %>

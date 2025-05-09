@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(45deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Container for return cards */
+        .returns-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* Individual return card */
+        .return-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid #3498db;
+        }
+
+        .return-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .return-card p {
+            color: #666;
+            margin: 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .return-card p:first-child {
+            color: #2c3e50;
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .amount {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        /* Item list */
+        .item-list {
+            margin: 10px 0;
+        }
+        .item {
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item span {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* Button container */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        /* Buttons */
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button.approve {
+            background: #2ecc71;
+            color: white;
+        }
+
+        button.approve:hover {
+            background: #27ae60;
+        }
+
+        button.reject {
+            background: #e74c3c;
+            color: white;
+        }
+
+        button.reject:hover {
+            background: #c0392b;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .returns-container {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .return-card {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+        .back-link {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .back-link:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Return Requests</h1>
+    <a href="/admin/orderlist" class="back-link">Back to Orders</a>
+    <div class="returns-container">
+        <% if (returns.length > 0) { %>
+            <% returns.forEach(order => { %>
+                <div class="return-card">
+                    <p>Order #<%= order._id %> - <%= order.userId.name %> (<%= order.userId.email %>)</p>
+                    <p>Reason: <%= order.returnReason || 'Not specified' %></p>
+                    <p>Total Amount: <span class="amount">₹<%= order.finalAmount.toFixed(2) %></span></p>
+                    <div class="item-list">
+                        <% order.orderedItems.forEach(item => { %>
+                            <div class="item">
+                                <span><%= item.product.productName %> (Qty: <%= item.quantity %>) - ₹<%= (item.price * item.quantity).toFixed(2) %></span>
+                                <div class="button-group">
+                                    <button class="approve" onclick="processReturn('<%= order._id %>', 'approve', '<%= item.product._id %>')">Approve</button>
+                                    <button class="reject" onclick="processReturn('<%= order._id %>', 'reject', '<%= item.product._id %>')">Reject</button>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p style="text-align: center; color: #666;">No return requests found.</p>
+        <% } %>
+    </div>
+
+    <script>
+        async function processReturn(orderId, action, productId) {
+            try {
+                const response = await fetch('/admin/process-return', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId, action, productId })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('An error occurred while processing the return');
+            }
+        }
+    </script>
+</body>
+</html>

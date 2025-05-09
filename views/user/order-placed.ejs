@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Success</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Flaticon (Unchanged) -->
+    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.0.0/uicons-regular-straight/css/uicons-regular-straight.css">
+    <style>
+        body {
+            background-color: #f8f9fa; /* Matches account.ejs, order-list.ejs */
+            font-family: 'Arial', sans-serif; /* Consistent font */
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar (Exact from account.ejs) */
+        .sidebar {
+            height: 100vh;
+            width: 250px;
+            position: fixed;
+            background: #343a40;
+            padding-top: 20px;
+        }
+        .sidebar a {
+            padding: 15px;
+            text-decoration: none;
+            font-size: 18px;
+            color: white;
+            display: block;
+        }
+        .sidebar a:hover {
+            background: #495057;
+        }
+
+        /* Content */
+        .content {
+            margin-left: 260px; /* Matches sidebar width + offset */
+            padding: 30px;
+            min-height: 100vh;
+            width: calc(100% - 260px);
+        }
+
+        /* Breadcrumb Styling (Exact from account.ejs) */
+        .breadcrumb {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .breadcrumb-item a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
+        .breadcrumb-item.active {
+            color: #6c757d;
+        }
+
+        /* Order Success Container */
+        .order-success-container {
+            max-width: 600px;
+            margin: 0 auto; /* Centered without top margin for consistency */
+            padding: 25px;
+            text-align: center;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Lighter shadow to match other pages */
+            border: 1px solid #dee2e6; /* Consistent border */
+        }
+
+        /* Success Checkmark Animation (Unchanged) */
+        .success-checkmark {
+            width: 80px;
+            height: 115px;
+            margin: 0 auto;
+        }
+        .check-icon {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            border-radius: 50%;
+            box-sizing: content-box;
+            border: 4px solid #28a745; /* Updated to Bootstrap green */
+        }
+        .icon-line {
+            height: 5px;
+            background-color: #28a745; /* Updated to Bootstrap green */
+            display: block;
+            border-radius: 2px;
+            position: absolute;
+            z-index: 10;
+        }
+        .line-tip {
+            width: 25px;
+            left: 14px;
+            top: 46px;
+            transform: rotate(45deg);
+            animation: icon-line-tip 0.75s;
+        }
+        .line-long {
+            width: 47px;
+            right: 8px;
+            top: 38px;
+            transform: rotate(-45deg);
+            animation: icon-line-long 0.75s;
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            position: absolute;
+            box-sizing: content-box;
+            border: 4px solid #28a745; /* Updated to Bootstrap green */
+        }
+        .icon-fix {
+            width: 5px;
+            height: 20px;
+            background-color: #fff;
+            position: absolute;
+            left: 26px;
+            top: 40px;
+            z-index: 1;
+            transform: rotate(-45deg);
+        }
+        @keyframes icon-line-tip {
+            0% { width: 0; left: 1px; top: 19px; }
+            54% { width: 0; left: 1px; top: 19px; }
+            70% { width: 25px; left: 14px; top: 46px; }
+            84% { width: 22px; left: 14px; top: 46px; }
+            100% { width: 25px; left: 14px; top: 46px; }
+        }
+        @keyframes icon-line-long {
+            0% { width: 0; right: 46px; top: 54px; }
+            65% { width: 0; right: 46px; top: 54px; }
+            84% { width: 47px; right: 8px; top: 38px; }
+            100% { width: 47px; right: 8px; top: 38px; }
+        }
+
+        /* Text Styles */
+        h2 {
+            color: #2c3e50; /* Matches order-list.ejs */
+            margin: 20px 0;
+            font-size: 1.8rem; /* Slightly smaller for balance */
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        p {
+            color: #6c757d; /* Muted gray for secondary text */
+            margin: 10px 0;
+            font-size: 1rem;
+        }
+        .order-info {
+            color: #28a745; /* Bootstrap green for success */
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        /* Buttons */
+        .action-buttons {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .order-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px; /* Softer corners */
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .home-btn {
+            background-color: #007bff; /* Blue for navigation, matches breadcrumb */
+            color: white;
+        }
+        .home-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .orders-btn {
+            background-color: #28a745; /* Green for success theme */
+            color: white;
+        }
+        .orders-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        .order-btn i {
+            margin-right: 8px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            .content {
+                margin-left: 200px;
+                width: calc(100% - 200px);
+            }
+        }
+        @media (max-width: 576px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                box-shadow: none;
+            }
+            .content {
+                margin-left: 0;
+                width: 100%;
+                padding: 15px;
+            }
+            .order-success-container {
+                padding: 15px;
+            }
+            .action-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar (Exact from account.ejs) -->
+        <div class="sidebar">
+            <h4 class="text-center text-white">User Dashboard</h4>
+            <a href="/account">Account</a>
+            <a href="/address-management">Address</a>
+            <a href="/orders">Orders</a>
+            <a href="/cart">Cart</a>
+            <a href="/wallet">Wallet</a>
+            <a href="/wishlist">Wishlist</a>
+            
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Breadcrumb Navigation (Exact from account.ejs) -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Order Success</li>
+                </ol>
+            </nav>
+
+            <div class="order-success-container">
+                <div class="success-checkmark">
+                    <div class="check-icon">
+                        <span class="icon-line line-tip"></span>
+                        <span class="icon-line line-long"></span>
+                        <div class="icon-circle"></div>
+                        <div class="icon-fix"></div>
+                    </div>
+                </div>
+                <h2>Order Placed Successfully!</h2>
+                <p>Thank you for shopping with "The Aura Candles."</p>
+                <p class="order-info">Your order has been confirmed and will be shipped soon.</p>
+                <div class="action-buttons">
+                    <a href="/" class="order-btn home-btn">
+                        <i class="fi fi-rs-home"></i> <!-- Updated Flaticon class -->
+                        Back to Home
+                    </a>
+                    <a href="/orders" class="order-btn orders-btn">
+                        <i class="fi fi-rs-box"></i> <!-- Updated Flaticon class -->
+                        View Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

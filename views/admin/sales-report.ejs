@@ -1,0 +1,175 @@
+<%- include("../../views/partials/admin/header") %>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css"/>
+    <style>
+        .col-md-3 { padding: 20px; border: 1px solid #ddd; border-radius: 10px; margin: 10px; }
+        .form-label { margin-bottom: 8px; }
+        .form-control { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .d-grid { margin-top: 20px; }
+        .btn-primary { background-color: #007bff; color: #fff; border: 1px solid #007bff; border-radius: 5px; padding: 10px 20px; cursor: pointer; }
+        .btn-primary:hover { background-color: #0056b3; border-color: #0056b3; }
+        .btn-success { background-color: #28a745; color: #fff; border: 1px solid #28a745; border-radius: 5px; padding: 10px 20px; cursor: pointer; }
+        .btn-success:hover { background-color: #218838; border-color: #218838; }
+        .table-responsive { margin-top: 20px; }
+        .error-message { color: red; }
+    </style>
+</head>
+<body>
+    <section class="content-main">
+        <div class="content-header">
+            <h2 class="content-title card-title">Sales Report</h2>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <form method="post" action="/admin/generate-sales-report" onsubmit="return generateReport(event)">
+                            <div class="mb-4">
+                                <label class="form-label">Report Type</label>
+                                <select name="reportType" class="form-control" id="reportType">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            <div class="mb-4 custom-dates" style="display: none;">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" name="startDate" class="form-control" id="startDate"/>
+                                <label class="form-label">End Date</label>
+                                <input type="date" name="endDate" class="form-control" id="endDate"/>
+                            </div>
+                            <div class="d-grid">
+                                <button class="btn btn-primary" type="submit">Generate Report</button>
+                            </div>
+                            <div class="d-grid mt-2">
+                                <button class="btn btn-success" type="button" onclick="downloadReport('pdf')">Download PDF</button>
+                            </div>
+                            <div class="d-grid mt-2">
+                                <button class="btn btn-success" type="button" onclick="downloadReport('excel')">Download Excel</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-8 ml-10">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Date</th>
+                                        <th>Total Amount</th>
+                                        <th>Discount</th>
+                                        <th>Coupon</th>
+                                        <th>Final Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (orders && orders.length > 0) { %>
+                                        <% orders.forEach(order => { %>
+                                            <tr>
+                                                <td><%= order.orderId %></td>
+                                                <td><%= order.createdOn.toDateString() %></td>
+                                                <td>₹<%= order.totalPrice.toFixed(2) %></td>
+                                                <td>₹<%= order.discount.toFixed(2) %></td>
+                                                <td><%= order.coupon && order.coupon.code ? order.coupon.code : 'None' %></td>
+                                                <td>₹<%= order.finalAmount.toFixed(2) %></td>
+                                            </tr>
+                                        <% }) %>
+                                        <tr>
+                                            <td colspan="2"><strong>Totals:</strong></td>
+                                            <td><strong>₹<%= totalSales.toFixed(2) %></strong></td>
+                                            <td><strong>₹<%= totalDiscount.toFixed(2) %></strong></td>
+                                            <td><strong><%= totalOrders %></strong></td>
+                                            <td><strong>₹<%= totalFinalAmount.toFixed(2) %></strong></td>
+                                        </tr>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="6" class="text-center">No orders found</td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $('#reportType').change(function() {
+            if ($(this).val() === 'custom') {
+                $('.custom-dates').show();
+            } else {
+                $('.custom-dates').hide();
+            }
+        });
+
+        function generateReport(event) {
+            event.preventDefault();
+            const formData = {
+                reportType: $('#reportType').val(),
+                startDate: $('#startDate').val(),
+                endDate: $('#endDate').val()
+            };
+
+            console.log('---------',formData)
+
+            fetch('/admin/generate-sales-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Error', 'Failed to generate report', 'error');
+            });
+            return false;
+        }
+
+        function downloadReport(format) {
+            const formData = {
+                reportType: $('#reportType').val(),
+                startDate: $('#startDate').val(),
+                endDate: $('#endDate').val(),
+                format: format
+            };
+
+            fetch('/admin/download-sales-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.message || 'Download failed'); });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // Ensure the correct file extension
+                a.download = `sales-report-${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            })
+            .catch(error => {
+                Swal.fire('Error', error.message, 'error');
+            });
+        }
+    </script>
+<%- include("../../views/partials/admin/footer") %>

@@ -5,53 +5,84 @@ const userSchema=new Schema({
     name:{
         type:String,
         required:true
-    },email:{
+    },
+    email:{
         type:String,
         required:true,
         unique:true
-    },phone:{
+    },
+    phone:{
         type:String,
         required:false,
         unique:true,
         sparse:true,
         default:null
-    },googleId:{
+    },
+    googleId:{
         type:String,
         unique:true
         
-    },password:{
+    },
+    password:{
         type:String,
         required:false
-    },isBlocked:{
+    },
+    profileImage:{
+        type:String,
+        default:'/uploads/default-profile.png' //default-profile image.
+    },
+    addresses:[
+        {
+            type:Schema.Types.ObjectId,
+            ref:"Address"
+        }
+    ],//References multiple Addresses
+    isBlocked:{
         type:Boolean,
         default:false
-    },isAdmin:{
+    },
+    isAdmin:{
         type:Boolean,
         default:false
-    },cart:[{
+    },
+    cart:[{
         type:Schema.Types.ObjectId,
         ref:"Cart"
     }],
     wallet:{
         type:Number,
         default:0
-    },wishlist:[{
+    },
+    walletTransactions: [{
+        type: { type: String, enum: ['credit', 'debit'], required: true },
+        amount: { type: Number, required: true },
+        description: { type: String, required: true },
+        orderId: { type: Schema.Types.ObjectId, ref: 'Order', required: false },
+        date: { type: Date, default: Date.now }
+    }],
+    wishlist:[{
         type:Schema.Types.ObjectId,
         ref:'Wishlist'
-    }],orderHistory:[{
+    }],
+    orderHistory:[{
         type:Schema.Types.ObjectId,
         ref:'Order'
-    }],creation:{
+    }],
+    creation:{
         type:Date,
         default:Date.now
-    },referralCode:{
+    },
+    referralCode:{
         type:String
-    },redeemed:{
+    },
+    redeemed:{
         type:Boolean
-    },redeemedUsers:[{
+    },
+    redeemedUsers:[{
         type:Schema.Types.ObjectId,
         ref:'User'
-    }],searchHistory:[{
+    }],
+    searchHistory:[{
         category:{
             type:Schema.Types.ObjectId,
             ref:'Category'
@@ -61,8 +92,13 @@ const userSchema=new Schema({
             type:Date,
             default:Date.now
         }
-    }]
-})
+    }],
+    shippingAddress:{
+        type:Schema.Types.ObjectId,
+        ref:"Address",
+        default:null//Stores the user's default shipping address
+    }
+});
 
 
 const User=mongoose.model('User',userSchema);

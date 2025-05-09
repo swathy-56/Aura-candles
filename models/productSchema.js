@@ -37,10 +37,15 @@ const productSchema=new Schema({
         type:Number,
         default:true
     },
-    color:{
-        type:String,
-        required:true
+    size: { // Added size as the variant field
+        type: String,
+        required: true
     },
+    // color: { // Made color optional
+    //     type: String,
+    //     required: false,
+    //     default: ''
+    // },
     productImage:{
         type:[String],
         required:true

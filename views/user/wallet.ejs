@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Wallet</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    /* Keeping all existing styles unchanged */
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .sidebar {
+      height: 100vh;
+      width: 250px;
+      position: fixed;
+      background: #343a40;
+      padding-top: 20px;
+    }
+    .sidebar a {
+      padding: 15px;
+      text-decoration: none;
+      font-size: 18px;
+      color: white;
+      display: block;
+    }
+    .sidebar a:hover {
+      background: #495057;
+    }
+
+    .content {
+      margin-left: 260px;
+      padding: 30px;
+      min-height: 100vh;
+      width: calc(100% - 260px);
+    }
+
+    .breadcrumb {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 10px 15px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    .breadcrumb-item a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .breadcrumb-item a:hover {
+      text-decoration: underline;
+    }
+    .breadcrumb-item.active {
+      color: #6c757d;
+    }
+
+    h2 {
+      color: #2c3e50;
+      font-weight: 600;
+      margin-bottom: 30px;
+      font-size: 1.8rem;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .wallet-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      border: 1px solid #dee2e6;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .wallet-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+    .wallet-card h4 {
+      color: #343a40;
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      background: #e9ecef;
+      padding: 5px 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .transaction-list h5 {
+      color: #343a40;
+      font-weight: 600;
+      font-size: 1.25rem;
+      margin-bottom: 15px;
+    }
+    .list-group-item {
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      margin-bottom: 10px;
+      border: 1px solid #dee2e6;
+      color: #6c757d;
+      font-size: 0.9rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .list-group-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+    .transaction-list p {
+      color: #6c757d;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .btn-details {
+      font-size: 0.8rem;
+      padding: 5px 10px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 200px;
+      }
+      .content {
+        margin-left: 200px;
+        width: calc(100% - 200px);
+      }
+    }
+    @media (max-width: 576px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        box-shadow: none;
+      }
+      .content {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+      }
+      .list-group-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .btn-details {
+        margin-top: 10px;
+      }
+      .modal-dialog {
+        margin: 10px;
+      }
+      .modal-body {
+        font-size: 0.9rem;
+      }
+      .modal-body p {
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="d-flex">
+    <div class="sidebar">
+      <h4 class="text-center text-white">User Dashboard</h4>
+      <a href="/account">Account</a>
+      <a href="/address-management">Address</a>
+      <a href="/orders">Orders</a>
+      <a href="/cart">Cart</a>
+      <a href="/wallet">Wallet</a>
+      <a href="/wishlist">Wishlist</a>
+      
+    </div>
+
+    <div class="content">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/">Home</a></li>
+          <li class="breadcrumb-item active" aria-current="page">Wallet</li>
+        </ol>
+      </nav>
+
+      <h2>My Wallet</h2>
+
+      <div class="wallet-card">
+        <h4>Balance: ₹<%= walletBalance ? walletBalance.toFixed(2) : '0.00' %></h4>
+        <div class="transaction-list">
+          <h5>Transaction History</h5>
+          <% if (transactions && transactions.length > 0) { %>
+            <div id="transactionList">
+              <% transactions.forEach(tx => { %>
+                <div class="transaction-item list-group-item">
+                  <span>
+                    <%= tx.transactionId %> -
+                    <%= tx.date ? new Date(tx.date).toLocaleDateString() : 'N/A' %> -
+                    <%= tx.type === 'credit' ? 'Credit' : 'Debit' %> -
+                    ₹<%= tx.amount ? tx.amount.toFixed(2) : '0.00' %>
+                  </span>
+                  <button class="btn btn-outline-info btn-details" data-tx='<%= JSON.stringify(tx) %>' onclick="showTransactionDetails(this)">Details</button>
+                </div>
+              <% }) %>
+            </div>
+            <ul class="pagination justify-content-center mt-4" id="pagination"></ul>
+          <% } else { %>
+            <p>No transactions yet.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transaction Details Modal -->
+  <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="transactionModalLabel">Transaction Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>User:</strong> <%= user && user.name ? user.name : 'N/A' %> (<%= user && user.email ? user.email : 'N/A' %>)</p>
+          <p><strong>Transaction ID:</strong> <span id="modalTransactionId"></span></p>
+          <p><strong>Date:</strong> <span id="modalDate"></span></p>
+          <p><strong>Type:</strong> <span id="modalType"></span></p>
+          <p><strong>Amount:</strong> ₹<span id="modalAmount"></span></p>
+          <p><strong>Source:</strong> <span id="modalSource"></span></p>
+          <div id="orderLinkContainer" style="display: none;">
+            <a id="orderLink" class="btn btn-primary btn-sm" href="#">View Order Details</a>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function showTransactionDetails(button) {
+      try {
+        const tx = JSON.parse(button.getAttribute('data-tx'));
+        document.getElementById('modalTransactionId').textContent = tx.transactionId || 'N/A';
+        const date = new Date(tx.date);
+        document.getElementById('modalDate').textContent = date.toLocaleString() || 'N/A';
+        document.getElementById('modalType').textContent = tx.type === 'credit' ? 'Credit' : 'Debit';
+        document.getElementById('modalAmount').textContent = tx.amount ? tx.amount.toFixed(2) : '0.00';
+        document.getElementById('modalSource').textContent = tx.source || 'N/A';
+
+        const orderLinkContainer = document.getElementById('orderLinkContainer');
+        const orderLink = document.getElementById('orderLink');
+        if (tx.orderLink) {
+          orderLinkContainer.style.display = 'block';
+          orderLink.href = tx.orderLink;
+        } else {
+          orderLinkContainer.style.display = 'none';
+        }
+
+        if (typeof bootstrap === 'undefined') {
+          console.error('Bootstrap is not loaded');
+          Swal.fire({ icon: 'error', title: 'Error', text: 'Required scripts failed to load. Please refresh the page.' });
+          return;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('transactionModal'));
+        modal.show();
+      } catch (error) {
+        console.error('Error parsing transaction:', error);
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Unable to load transaction details. Please try again.' });
+      }
+    }
+
+    // Pagination Logic
+    $(document).ready(function () {
+      const itemsPerPage = 5;
+      const $transactions = $(".transaction-item");
+      const totalPages = Math.ceil($transactions.length / itemsPerPage);
+
+      function showPage(page) {
+        $transactions.hide();
+        const start = (page - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        $transactions.slice(start, end).show();
+
+        let paginationHTML = '';
+        for (let i = 1; i <= totalPages; i++) {
+          paginationHTML += `<li class="page-item ${i === page ? 'active' : ''}">
+            <a class="page-link" href="#">${i}</a></li>`;
+        }
+        $('#pagination').html(paginationHTML);
+      }
+
+      $('#pagination').on('click', 'a', function (e) {
+        e.preventDefault();
+        const page = parseInt($(this).text());
+        showPage(page);
+      });
+
+      showPage(1); 
+    });
+  </script>
+</body>
+</html>

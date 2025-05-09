@@ -1,0 +1,431 @@
+<%- include("../../views/partials/admin/header") %>
+<main class="main-wrap">
+    <div class="header-section">
+        <h1>Order Details</h1>
+    </div>
+
+    <div class="order-card">
+        <div class="order-info">
+            <p><strong>Order ID:</strong> <%= order.orderId %></p>
+            <p><strong>User:</strong> <%= order.userId.name %> (<%= order.userId.email %>)</p>
+            <p><strong>Date:</strong> <%= order.createdOn.toLocaleDateString() %></p>
+            <p><strong>Overall Status:</strong> <span class="status-<%= order.status.toLowerCase().replace(' ', '-') %>"><%= order.status %></span></p>
+        </div>
+
+        <h3>Items</h3>
+        <ul class="items-list">
+            <% order.orderedItems.forEach(item => { %>
+                <li class="item">
+                    <div class="item-details">
+                        <span class="item-name"><%= item.product.productName %></span>
+                        <span>Qty: <%= item.quantity %></span>
+                        <span>Price: ₹<%= item.price.toFixed(2) %></span>
+                        <span>Status: <span class="status-<%= (item.status || 'Pending').toLowerCase().replace(' ', '-') %>"><%= item.status || 'Pending' %></span></span>
+                        <% if (item.status === 'Return Request' && item.returnReason) { %>
+                            <span>Return Reason: <%= item.returnReason %></span>
+                        <% } %>
+                    </div>
+                    <form class="item-status-form" data-product-id="<%= item.product._id %>">
+                        <select name="status" <%= ['Delivered', 'Cancelled'].includes(item.status) ? 'disabled' : '' %>>
+                            <% ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].forEach(s => { %>
+                                <option value="<%= s %>" <%= (item.status || 'Pending') === s ? 'selected' : '' %>><%= s %></option>
+                            <% }) %>
+                        </select>
+                        <button type="submit" <%= ['Delivered', 'Cancelled'].includes(item.status) ? 'disabled' : '' %>>Update</button>
+                    </form>
+                    
+                </li>
+            <% }) %>
+        </ul>
+
+        <div class="order-total">
+            <p>Total: ₹<%= order.finalAmount.toFixed(2) %></p>
+        </div>
+
+        <a href="/admin/returns" class="returns-link">View All Return Requests</a>
+    </div>
+
+    <% if (order.orderedItems.some(item => item.status === 'Return Request')) { %>
+        <form id="verifyReturnForm" class="return-form">
+            <div class="form-group">
+                <label for="productId">Select Product:</label>
+                <select name="productId" id="productId">
+                    <% order.orderedItems.filter(item => item.status === 'Return Request').forEach(item => { %>
+                        <option value="<%= item.product._id %>">
+                            <%= item.product.productName %> (Qty: <%= item.quantity %>)
+                        </option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="action">Action:</label>
+                <select name="action" id="action">
+                    <option value="approve">Approve Return</option>
+                    <option value="reject">Reject Return</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="adminNote">Admin Note (Optional):</label>
+                <textarea name="adminNote" id="adminNote" placeholder="Add a note..."></textarea>
+            </div>
+            <button type="submit">Process Return</button>
+        </form>
+    <% } %>
+</main>
+
+<style>
+    .main-wrap {
+        margin-left: 200px;
+        padding: 25px;
+        width: calc(100% - 200px);
+        background-color: #f9fafb;
+        min-height: 100vh;
+    }
+
+    .header-section {
+        margin-bottom: 20px;
+    }
+
+    h1 {
+        color: #1f2937;
+        font-size: 2rem;
+        font-weight: 700;
+        text-align: left;
+        margin: 0;
+    }
+
+    h3 {
+        color: #374151;
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 20px 0 15px;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 8px;
+    }
+
+    .order-card {
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        max-width: 900px;
+        margin: 0 auto;
+        transition: box-shadow 0.3s ease;
+    }
+    .item-status-form select:disabled,
+   .item-status-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+    .order-card:hover {
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-info p {
+        font-size: 1rem;
+        color: #4b5563;
+        margin: 8px 0;
+        line-height: 1.6;
+    }
+
+    .order-info p strong {
+        color: #1f2937;
+        font-weight: 600;
+        margin-right: 5px;
+    }
+
+    .status-pending {
+        color: #d97706;
+        font-weight: 500;
+    }
+
+    .status-processing {
+        color: #2563eb;
+        font-weight: 500;
+    }
+
+    .status-shipped {
+        color: #059669;
+        font-weight: 500;
+    }
+
+    .status-delivered {
+        color: #16a34a;
+        font-weight: 500;
+    }
+
+    .status-cancelled {
+        color: #dc2626;
+        font-weight: 500;
+    }
+
+    .status-return-request {
+        color: #ea580c;
+        font-weight: 500;
+    }
+
+    .status-returned {
+        color: #b91c1c;
+        font-weight: 500;
+    }
+
+    .items-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f9fafb;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .item:hover {
+        background: #f1f5f9;
+        transform: translateY(-2px);
+    }
+
+    .item-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        font-size: 0.95rem;
+        color: #4b5563;
+    }
+
+    .item-details .item-name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .item-status-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .item-status-form select {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+        min-width: 140px;
+    }
+
+    .item-status-form select:focus {
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+    }
+
+    .item-status-form button {
+        padding: 8px 16px;
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.1s ease;
+    }
+
+    .item-status-form button:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    .order-total {
+        margin-top: 20px;
+        text-align: right;
+    }
+
+    .order-total p {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #16a34a;
+        background: #f0fdf4;
+        padding: 10px 15px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .returns-link {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background: #7c3aed;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        transition: background-color 0.3s ease, transform 0.1s ease;
+    }
+
+    .returns-link:hover {
+        background: #6d28d9;
+        transform: translateY(-1px);
+    }
+
+    .return-form {
+        max-width: 900px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: space-between;
+    }
+
+    .form-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.9rem;
+        color: #374151;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+
+    .return-form select,
+    .return-form textarea {
+        width: 100%;
+        padding: 10px 15px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .return-form select:focus,
+    .return-form textarea:focus {
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+    }
+
+    .return-form textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .return-form button {
+        padding: 10px 25px;
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.1s ease;
+        align-self: flex-end;
+    }
+
+    .return-form button:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+        .main-wrap {
+            margin-left: 150px;
+            width: calc(100% - 150px);
+        }
+
+        .return-form {
+            flex-direction: column;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .main-wrap {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .item-details {
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .item-status-form {
+            width: 100%;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .item-status-form select,
+        .item-status-form button {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    // Item Status Update
+    document.querySelectorAll('.item-status-form').forEach(form => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productId = form.dataset.productId;
+            const status = form.querySelector('select[name="status"]').value;
+            const response = await fetch('/admin/update-item-status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: '<%= order._id %>', productId, status })
+            });
+            const result = await response.json();
+            if (result.success) {
+                location.reload();
+            } else {
+                alert(result.message);
+            }
+        });
+    });
+
+    // Return Verification
+    const verifyForm = document.getElementById('verifyReturnForm');
+    if (verifyForm) {
+        verifyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productId = e.target.productId.value;
+            const action = e.target.action.value;
+            const adminNote = e.target.adminNote.value;
+            const response = await fetch('/admin/process-return', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: '<%= order._id %>', productId, action, adminNote })
+            });
+            const result = await response.json();
+            if (result.success) {
+                location.reload();
+            } else {
+                alert(result.message);
+            }
+        });
+    }
+</script>
+<%- include("../../views/partials/admin/footer") %>

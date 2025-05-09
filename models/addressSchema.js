@@ -8,40 +8,44 @@ const addressSchema=new Schema({
         ref:'User',
         required:true
     },
-    address:[{
-        addressType:{
+    
+    addressType:{
             type:String,
             required:false
-        },
-        name:{
+    },
+    name:{
             type:String,
             required:true
-        },
-        city:{
+    },
+    city:{
             type:String,
             required:true
-        },
-        landMark:{
+    },
+    landMark:{
             type:String,
             required:true
-        },
-        state:{
+    },
+    state:{
             type:String,
             required:true
-        },
-        pincode:{
+    },
+    pincode:{
             type:Number,
             required:true
-        },
-        phone:{
+    },
+    phone:{
             type:String,
             required:true
-        },
-        altPhone:{
+    },
+    altPhone:{
             type:String,
             required:true
-        }
-    }]
+    },
+    isShippingAddress:{
+            type:Boolean,
+            default:false//only one address should have this set to true.
+    }
+    
 })
 
 

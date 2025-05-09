@@ -6,7 +6,7 @@
     <meta name="keywords" content="Male_Fashion, unica, creative, html" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Male-Fashion</title>
+    <title>Aura Candles</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
       rel="stylesheet"
@@ -109,6 +109,16 @@
         font-size: 0.75rem;
         display: none;
       }
+      .forgot-password-link{
+        font-size: 0.875rem;
+        color: #007bff;
+        text-decoration: none;
+
+      }
+      .forgot-password-link:hover{
+        color:#0056b3;
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
@@ -140,6 +150,10 @@
                 />
                 <div id="error2" class="error-message"></div>
               </div>
+              <div class="form-group d-flex justify-content-end">
+
+                <a href="/forgot-password" class="forgot-password-link ms-auto">Forgot Password</a>
+              </div>
               <%if(locals.message && message.length>0){%>
               <div class="alert alert-danger text-center">
                 <%=message%>
@@ -153,7 +167,7 @@
                 <div class="social-btns">
                   <a href="/auth/google" class="btn btn-outline-danger">
                     <img
-                      src="img/googlesignup.png"
+                      src="uploads/product-images/google2.png"
                       alt="Google Logo"
                       style="width: 24px; height: 24px"
                     />
@@ -164,10 +178,10 @@
           </div>
           <div class="login-image">
             <a href="/">
-              <img src="img/signup.svg" alt="Shopping Site" />
+              <img src="uploads/product-images/Fall Candles.jpeg" alt="Shopping Site" />
             </a>
             <div class="text-center mt-2">
-              <a href="#" class="sign-up-link">Not registered? Sign up</a>
+              <a href="/signup" class="sign-up-link">Not registered? Sign up</a>
             </div>
           </div>
         </div>
