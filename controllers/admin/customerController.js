@@ -1,4 +1,5 @@
 const User=require('../../models/userSchema');
+const { HttpStatus } = require("../../shared/constants");
 
 
 
@@ -34,7 +35,7 @@ const customerInfo = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching customers:", error);
-        res.status(500).send("Server Error");
+        res.status(HttpStatus.SERVER_ERROR).send("Server Error");
         res.redirect('/admin/pageerror');
     }
 };
@@ -43,14 +44,14 @@ const customerBlocked = async (req, res) => {
     try {
         const { id } = req.body;
         if (!id || id.length !== 24) {
-            return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'Invalid customer ID' });
         }
 
         await User.updateOne({ _id: id }, { $set: { isBlocked: true } });
         return res.status(200).json({ success: true, message: 'Customer blocked successfully' }); // ✅ Correct response
     } catch (error) {
         console.error('Error blocking customer:', error);
-        return res.status(500).json({ success: false, message: 'Error blocking customer' });
+        return res.status(HttpStatus.SERVER_ERROR).json({ success: false, message: 'Error blocking customer' });
     }
 };
 
@@ -58,14 +59,14 @@ const customerUnBlocked = async (req, res) => {
     try {
         const { id } = req.body;
         if (!id || id.length !== 24) {
-            return res.status(400).json({ success: false, message: 'Invalid customer ID' });
+            return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: 'Invalid customer ID' });
         }
 
         await User.updateOne({ _id: id }, { $set: { isBlocked: false } });
         return res.status(200).json({ success: true, message: 'Customer unblocked successfully' }); // ✅ Correct response
     } catch (error) {
         console.error('Error unblocking customer:', error);
-        return res.status(500).json({ success: false, message: 'Error unblocking customer' });
+        return res.status(HttpStatus.SERVER_ERROR).json({ success: false, message: 'Error unblocking customer' });
     }
 };
 

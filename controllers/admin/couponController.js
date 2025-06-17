@@ -1,5 +1,5 @@
-// controllers/admin/couponController.js
 const Coupon = require('../../models/couponSchema');
+const { HttpStatus } = require("../../shared/constants");
 
 const getCouponsPage = async (req, res) => {
     try {
@@ -7,7 +7,7 @@ const getCouponsPage = async (req, res) => {
         res.render('coupons', { coupons });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Server Error');
+        res.status(HttpStatus.SERVER_ERROR).send('Server Error');
     }
 };
 
@@ -20,10 +20,7 @@ const addCoupon = async (req, res) => {
             return res.json({ success: false, message: 'Coupon code already exists' });
         }
 
-        const checking=await Coupon.findOne({discountPercentage,maxDiscount})
-        if(checking){
-            
-        }
+       
 
 
         const coupon = new Coupon({

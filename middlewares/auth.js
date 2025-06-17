@@ -1,4 +1,5 @@
 const User=require('../models/userSchema');
+const { HttpStatus } = require("../shared/constants");
 
 const userAuth=(req,res,next)=>{
     console.log('Session data:', req.session);
@@ -13,7 +14,7 @@ const userAuth=(req,res,next)=>{
         })
         .catch(error=>{
            console.log('Error in user auth middleware');
-           res.status(500).send('Internal Server Error');
+           res.status(HttpStatus.SERVER_ERROR).send('Internal Server Error');
         })
     }else{
         res.redirect('/login')
@@ -22,10 +23,9 @@ const userAuth=(req,res,next)=>{
 
 
 const adminAuth = (req, res, next) => {
-    console.log("Admin Auth Middleware - Session Data:", req.session);
     
     if (req.session.admin) {
-        User.findById(req.session.admin)
+        User.findById(req.session.admin._id)
         .then(data => {
             if (data) {
                 next();
@@ -36,7 +36,7 @@ const adminAuth = (req, res, next) => {
         })
         .catch(error => {
             console.log('Error in admin auth middleware', error);
-            res.status(500).send('Internal Server Error');
+            res.status(HttpStatus.SERVER_ERROR).send('Internal Server Error');
         });
     } else {
         console.log("Session admin not found. Redirecting to login.");

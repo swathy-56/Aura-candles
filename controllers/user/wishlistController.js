@@ -2,6 +2,7 @@ const Wishlist = require('../../models/wishlistSchema');
 const Cart = require('../../models/cartSchema');
 const Product = require('../../models/productSchema');
 const User = require('../../models/userSchema');
+const { HttpStatus } = require("../../shared/constants");
 
 // Get Wishlist Page
 const getWishlistPage = async (req, res) => {
@@ -26,7 +27,7 @@ const getWishlistPage = async (req, res) => {
         });
     } catch (error) {
         console.error('Error in getWishlistPage:', error);
-        res.status(500).send('Server Error');
+        res.status(HttpStatus.SERVER_ERROR).send('Server Error');
     }
 };
 
@@ -59,7 +60,7 @@ const addToWishlist = async (req, res) => {
         res.json({ success: true, message: 'Product added to wishlist' });
     } catch (error) {
         console.error('Error in addToWishlist:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        res.status(HttpStatus.SERVER_ERROR).json({ success: false, message: 'Server error' });
     }
 };
 
@@ -84,7 +85,7 @@ const removeFromWishlist = async (req, res) => {
         res.json({ success: true, message: 'Product removed from wishlist' });
     } catch (error) {
         console.error('Error in removeFromWishlist:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        res.status(HttpStatus.SERVER_ERROR).json({ success: false, message: 'Server error' });
     }
 };
 
@@ -112,9 +113,9 @@ const addToCartFromWishlist = async (req, res) => {
                 items: [{
                     productId,
                     quantity: 1,
-                    price: product.salePrice // Include the price from Product
+                    price: product.regularPrice // Include the price from Product
                 }],
-                totalPrice: product.salePrice // Initialize totalPrice
+                totalPrice: product.regularPrice // Initialize totalPrice
             });
         } else {
             const itemExists = cart.items.some(item => item.productId.toString() === productId);
@@ -122,9 +123,9 @@ const addToCartFromWishlist = async (req, res) => {
                 cart.items.push({
                     productId,
                     quantity: 1,
-                    price: product.salePrice // Include the price from Product
+                    price: product.regularPrice // Include the price from Product
                 });
-                cart.totalPrice = (cart.totalPrice || 0) + product.salePrice; // Update totalPrice
+                cart.totalPrice = (cart.totalPrice || 0) + product.regularPrice; // Update totalPrice
             }
         }
         await cart.save();
@@ -139,7 +140,7 @@ const addToCartFromWishlist = async (req, res) => {
         res.json({ success: true, message: 'Product added to cart and removed from wishlist' });
     } catch (error) {
         console.error('Error in addToCartFromWishlist:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        res.status(HttpStatus.SERVER_ERROR).json({ success: false, message: 'Server error' });
     }
 };
 

@@ -1,6 +1,5 @@
 <%- include("../../views/partials/admin/header") %>
 <head>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css"/>
   <style>
     .col-md-3 { padding: 20px; border: 1px solid #ddd; border-radius: 10px; margin: 10px; }
     .form-label { margin-bottom: 8px; }
@@ -13,7 +12,92 @@
     .pagination a, .pagination .current-page { display: inline-block; padding: 5px 10px; margin: 0 2px; border: 1px solid #ddd; text-decoration: none; color: #333; }
     .pagination a:hover { background-color: #f5f5f5; }
     .pagination .current-page { background-color: #007bff; color: white; border-color: #007bff; }
-    .error-message { color: red; }
+    .error-message { color: red; display: none; }
+
+    /* Toast Styles */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1055;
+    }
+
+    .toast {
+      background: rgba(255, 245, 230, 0.95); /* Creamy off-white */
+      border: 1px solid #e8d7b0;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      min-width: 300px;
+    }
+
+    .toast-success {
+      background: rgba(46, 204, 113, 0.95); /* Soft green for success */
+      color: #ffffff;
+    }
+
+    .toast-error {
+      background: rgba(231, 76, 60, 0.95); /* Soft red for errors */
+      color: #ffffff;
+    }
+
+    .toast-confirm {
+      background: rgba(255, 245, 230, 0.95); /* Creamy off-white for confirmation */
+      color: #4a2c0b;
+    }
+
+    .toast-header {
+      background: transparent;
+      border-bottom: none;
+      color: #4a2c0b; /* Rich brown */
+      font-family: 'Lato', sans-serif;
+      font-weight: 500;
+    }
+
+    .toast-success .toast-header,
+    .toast-error .toast-header {
+      color: #ffffff;
+    }
+
+    .toast-body {
+      color: #4a2c0b;
+      font-family: 'Lato', sans-serif;
+    }
+
+    .toast-success .toast-body,
+    .toast-error .toast-body {
+      color: #ffffff;
+    }
+
+    .toast-confirm .toast-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast-confirm .btn {
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 0.9em;
+    }
+
+    .toast-confirm .btn-confirm {
+      background-color: #d33;
+      color: #ffffff;
+    }
+
+    .toast-confirm .btn-cancel {
+      background-color: #3085d6;
+      color: #ffffff;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 576px) {
+      .toast-container {
+        top: 10px;
+        right: 10px;
+        width: calc(100% - 20px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -23,7 +107,8 @@
         <h2 class="content-title card-title">Coupons</h2>
       </div>
     </div>
-    
+    <!-- Toast Container -->
+    <div class="toast-container"></div>
     <div class="card">
       <div class="card-body">
         <div class="row">
@@ -44,7 +129,6 @@
                 <input type="number" name="maxDiscount" min="0" class="form-control" id="max_discount" required/>
                 <div id="max-discount-error" class="error-message"></div>
               </div>
-              
               <div class="mb-4">
                 <label for="min_amount" class="form-label">Minimum Amount</label>
                 <input type="number" name="minimumAmount" min="0" class="form-control" id="min_amount" required/>
@@ -98,7 +182,7 @@
                       <% } %>
                     </td>
                     <td>
-                      <button class="btn btn-danger" onclick="deleteCoupon('<%= coupon._id %>')">Delete</button>
+                      <button class="btn btn-danger" onclick="showDeleteConfirmToast('<%= coupon._id %>')">Delete</button>
                     </td>
                   </tr>
                   <% }) %>
@@ -107,9 +191,8 @@
               <div class="pagination-container">
                 <div class="pagination">
                   <% if (currentPage > 1) { %>
-                    <a href="?page=<%= currentPage - 1 %>">&laquo; Prev</a>
+                    <a href="?page=<%= currentPage - 1 %>">« Prev</a>
                   <% } %>
-                  
                   <% for (let i = 1; i <= totalPages; i++) { %>
                     <% if (i === currentPage) { %>
                       <span class="current-page"><%= i %></span>
@@ -117,9 +200,8 @@
                       <a href="?page=<%= i %>"><%= i %></a>
                     <% } %>
                   <% } %>
-                  
                   <% if (currentPage < totalPages) { %>
-                    <a href="?page=<%= currentPage + 1 %>">Next &raquo;</a>
+                    <a href="?page=<%= currentPage + 1 %>">Next »</a>
                   <% } %>
                 </div>
               </div>
@@ -130,9 +212,70 @@
     </div>
   </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // Function to show toast notifications
+    function showToast(message, type = 'error') {
+      const toastContainer = document.querySelector('.toast-container');
+      const toast = document.createElement('div');
+      toast.classList.add('toast', `toast-${type}`);
+      toast.setAttribute('role', 'alert');
+      toast.setAttribute('aria-live', 'assertive');
+      toast.setAttribute('aria-atomic', 'true');
+      toast.setAttribute('data-bs-autohide', 'true');
+      toast.setAttribute('data-bs-delay', '5000');
+
+      toast.innerHTML = `
+        <div class="toast-header">
+          <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+          <button type="button" class="btn-close ${type === 'success' || type === 'error' ? 'btn-close-white' : ''}" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          ${message}
+        </div>
+      `;
+
+      toastContainer.appendChild(toast);
+      const bsToast = new bootstrap.Toast(toast);
+      bsToast.show();
+      toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+      });
+    }
+
+    // Function to show confirmation toast for delete
+    function showDeleteConfirmToast(couponId) {
+      const toastContainer = document.querySelector('.toast-container');
+      const toast = document.createElement('div');
+      toast.classList.add('toast', 'toast-confirm');
+      toast.setAttribute('role', 'alert');
+      toast.setAttribute('aria-live', 'assertive');
+      toast.setAttribute('aria-atomic', 'true');
+      toast.setAttribute('data-bs-autohide', 'false');
+
+      toast.innerHTML = `
+        <div class="toast-header">
+          <strong class="me-auto">Confirm Delete</strong>
+          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          <p>You won't be able to revert this!</p>
+          <div class="d-flex justify-content-end gap-2">
+            <button class="btn btn-confirm" onclick="deleteCoupon('${couponId}')">Yes, delete it!</button>
+            <button class="btn btn-cancel" data-bs-dismiss="toast">Cancel</button>
+          </div>
+        </div>
+      `;
+
+      toastContainer.appendChild(toast);
+      const bsToast = new bootstrap.Toast(toast);
+      bsToast.show();
+      toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+      });
+    }
+
     function validateCouponForm(event) {
       event.preventDefault();
       clearErrorMessages();
@@ -145,23 +288,23 @@
       let isValid = true;
 
       if (!code) {
-        displayErrorMessage('code-error', 'Please enter a coupon code');
+        showToast('Please enter a coupon code', 'error');
         isValid = false;
       }
       if (!discount || discount < 0 || discount > 100) {
-        displayErrorMessage('discount-error', 'Discount must be between 0 and 100');
+        showToast('Discount must be between 0 and 100', 'error');
         isValid = false;
       }
       if (!maxDiscount || maxDiscount < 0) {
-        displayErrorMessage('max-discount-error', 'Max discount must be a positive number');
+        showToast('Max discount must be a positive number', 'error');
         isValid = false;
       }
       if (!minAmount || minAmount < 0) {
-        displayErrorMessage('min-amount-error', 'Minimum amount must be positive');
+        showToast('Minimum amount must be positive', 'error');
         isValid = false;
       }
       if (!expiry || new Date(expiry) < new Date()) {
-        displayErrorMessage('expiry-error', 'Please select a future date');
+        showToast('Please select a future date', 'error');
         isValid = false;
       }
 
@@ -174,40 +317,38 @@
         .then(response => response.json())
         .then(data => {
           if (data.success) {
-            Swal.fire('Success', 'Coupon added successfully', 'success').then(() => location.reload());
+            showToast('Coupon added successfully', 'success');
+            setTimeout(() => location.reload(), 2000);
           } else {
-            Swal.fire('Error', data.message, 'error');
+            showToast(data.message || 'Error adding coupon', 'error');
           }
+        })
+        .catch(error => {
+          console.error('Error adding coupon:', error);
+          showToast('Something went wrong. Please try again.', 'error');
         });
       }
       return false;
     }
 
     function deleteCoupon(couponId) {
-      Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          fetch('/admin/delete-coupon', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ couponId })
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              Swal.fire('Deleted!', 'Coupon has been deleted.', 'success').then(() => location.reload());
-            } else {
-              Swal.fire('Error', data.message, 'error');
-            }
-          });
+      fetch('/admin/delete-coupon', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ couponId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast('Coupon deleted successfully', 'success');
+          setTimeout(() => location.reload(), 2000);
+        } else {
+          showToast(data.message || 'Error deleting coupon', 'error');
         }
+      })
+      .catch(error => {
+        console.error('Error deleting coupon:', error);
+        showToast('Something went wrong. Please try again.', 'error');
       });
     }
 

@@ -29,7 +29,6 @@ const userSchema=new Schema({
     },
     profileImage:{
         type:String,
-        default:'/uploads/default-profile.png' //default-profile image.
     },
     addresses:[
         {

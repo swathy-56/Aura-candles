@@ -232,11 +232,11 @@
             <div class="product-info">
                 <h1><%= product.productName %></h1>
                 <p><%= product.description %></p>
-                <p><strong>Brand:</strong> <%= product.brand.brandName %></p>
+                <p><strong>Brand:</strong> <%= product.brand %></p>
                 <p><strong>Category:</strong> <%= product.category.name %></p>
-                <p class="price">Sale Price: ₹ <%= product.salePrice %>
-                    <% if (product.regularPrice > product.salePrice) { %>
-                        <span class="discount">(Save <%= ((product.regularPrice - product.salePrice) / product.regularPrice * 100).toFixed(1) %>%)</span>
+                <p class="price">Price: ₹ <%= product.finalPrice%>
+                    <% if (product.regularPrice > product.finalPrice) { %>
+                        <span class="discount">(Save <%= ((product.regularPrice - product.finalPrice) / product.regularPrice * 100).toFixed(1) %>%)</span>
                     <% } %>
                 </p>
                 <p class="stock-status">
@@ -247,7 +247,7 @@
                     <% } %>
                 </p>
                 <% if (product.quantity > 0) { %>
-                    <button class="btn add-cart" data-id="<%= product._id %>" data-quantity="1" data-price="<%= product.salePrice %>">+ Add To Cart</button>
+                    <button class="btn add-cart" data-id="<%= product._id %>" data-quantity="1" data-price="<%= product.regularPrice %>">+ Add To Cart</button>
                 <% } else { %>
                     <button class="btn" disabled>Out of Stock</button>
                 <% } %>
@@ -261,11 +261,11 @@
             <div class="related-products-list">
                 <% relatedProducts.forEach((related) => { %>
                     <div class="related-product">
-                        <a href="/productDetails/<%= related._id %>">
+                        <a href="/productDetails?id=<%= related._id %>">
                             <img src="/uploads/re-image/<%= related.productImage[0] %>"
                                  alt="<%= related.productName %>">
                             <h4><%= related.productName %></h4>
-                            <p>₹ <%= related.salePrice %></p>
+                            <p>₹ <%= related.regularPrice %></p>
                         </a>
                     </div>
                 <% }); %>

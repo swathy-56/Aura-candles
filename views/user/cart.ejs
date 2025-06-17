@@ -345,7 +345,7 @@
                                 <div class="cart-details">
                                     <h5><%= item.productId.productName %></h5>
                                     <p><%= item.productId.description %></p>
-                                    <p>Price: ₹<%= item.productId.salePrice %></p>
+                                    <p>Price: ₹<%= item.price %></p>
 
                                     <!-- Debug Category Info -->
                                     
@@ -368,7 +368,7 @@
                                     <% } %>
 
                                     <p class="fw-bold total-price" id="total-price-<%= item._id %>">
-                                        Total: ₹<%= item.totalPrice || (item.productId.salePrice * item.quantity) %>
+                                        Total: ₹<%= (item.quantity * item.price) %>
                                     </p>
                                 </div>
 
@@ -390,9 +390,7 @@
                                     <%= cart.items.filter(item => item.productId.quantity > 0 && !item.productId.isBlocked && (!item.productId.category || (typeof item.productId.category.isListed !== 'undefined' && item.productId.category.isListed === true))).length %>
                                 </span></p>
                             <p class="fw-bold">Grand Total: ₹<span id="grand-total">
-                                    <%= cart.items.reduce((sum, item) => {
-                                        return (item.productId.quantity > 0 && !item.productId.isBlocked && (!item.productId.category || (typeof item.productId.category.isListed !== 'undefined' && item.productId.category.isListed === true))) ? sum + (item.productId.salePrice * item.quantity) : sum;
-                                    }, 0) %>
+                                    <%= total %>
                                 </span></p>
                             <button id="checkout-btn" class="btn btn-primary w-100 mt-3"
                                 <%= cart.items.some(item => item.productId.quantity <= 0 || item.productId.isBlocked || (item.productId.category && typeof item.productId.category.isListed !== 'undefined' && item.productId.category.isListed === false)) ? 'disabled' : '' %>>

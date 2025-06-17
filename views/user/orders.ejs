@@ -1,372 +1,665 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Order List</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
     <style>
-        body {
-            background-color: #f5f6fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-        }
+      body {
+        background-color: #f5f6fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
 
+      .sidebar {
+        height: 100vh;
+        width: 250px;
+        position: fixed;
+        background: #343a40;
+        padding-top: 20px;
+      }
+      .sidebar a {
+        padding: 15px;
+        text-decoration: none;
+        font-size: 18px;
+        color: white;
+        display: block;
+      }
+      .sidebar a:hover {
+        background: #495057;
+      }
+
+      .content {
+        margin-left: 260px;
+        padding: 30px;
+        min-height: 100vh;
+        width: calc(100% - 260px);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 15px;
+      }
+
+      h2 {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 30px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .breadcrumb {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 10px 15px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .breadcrumb-item a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      .breadcrumb-item a:hover {
+        text-decoration: underline;
+      }
+      .breadcrumb-item.active {
+        color: #6c757d;
+      }
+
+      .search-container {
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .search-form {
+        max-width: 500px;
+        width: 100%;
+        display: flex;
+        gap: 10px;
+        background: white;
+        padding: 10px;
+        border-radius: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .search-form input {
+        border: none;
+        border-radius: 20px;
+        padding: 12px 20px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+      }
+
+      .search-form input:focus {
+        outline: none;
+        background: white;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+      }
+
+      .search-form button {
+        border-radius: 20px;
+        padding: 12px 25px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+      }
+
+      .search-form button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
+      }
+
+      .order-table {
+        width: 100%;
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: none;
+      }
+
+      .order-table th {
+        background: #2c3e50;
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .order-table td {
+        padding: 20px;
+        vertical-align: middle;
+        border-bottom: 1px solid #eee;
+        color: #444;
+      }
+
+      .order-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .order-table tr:hover {
+        background: #f8f9fa;
+        transition: background 0.2s ease;
+      }
+
+      .order-table ul {
+        padding-left: 20px;
+        margin: 0;
+        color: #666;
+      }
+
+      .order-table ul li {
+        margin: 5px 0;
+      }
+
+      .btn-view {
+        background: #3498db;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: inline-block;
+      }
+
+      .btn-view:hover {
+        background: #2980b9;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .status-pending {
+        background: #ffc107;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 10px;
+      }
+      .status-delivered {
+        background: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 10px;
+      }
+      .status-cancelled {
+        background: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 10px;
+      }
+      .status-failed {
+        background: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 10px;
+      }
+      .status-returned {
+        background: #6c757d;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 10px;
+      }
+      .status-return-request {
+        background: #17a2b8;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 10px;
+      }
+
+      .pagination {
+        margin-top: 30px;
+      }
+
+      .page-link {
+        border: none;
+        color: #3498db;
+        padding: 10px 15px;
+        margin: 0 5px;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+      }
+
+      .page-link:hover {
+        background: #3498db;
+        color: white;
+      }
+
+      .page-item.active .page-link {
+        background: #3498db;
+        color: white;
+      }
+
+      .page-item.disabled .page-link {
+        color: #ccc;
+      }
+      .status-failed {
+        background-color: #dc3545; /* Red for failed */
+        color: white;
+        padding: 5px 20px;
+        border-radius: 10px;
+      }
+
+      @media (max-width: 768px) {
         .sidebar {
-            height: 100vh;
-            width: 250px;
-            position: fixed;
-            background: #343a40;
-            padding-top: 20px;
+          width: 200px;
         }
-        .sidebar a {
-            padding: 15px;
-            text-decoration: none;
-            font-size: 18px;
-            color: white;
-            display: block;
-        }
-        .sidebar a:hover {
-            background: #495057;
-        }
-
         .content {
-            margin-left: 260px;
-            padding: 30px;
-            min-height: 100vh;
-            width: calc(100% - 260px);
+          margin-left: 200px;
+          width: calc(100% - 200px);
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 15px;
+      }
+      @media (max-width: 576px) {
+        .sidebar {
+          width: 100%;
+          height: auto;
+          position: relative;
+          box-shadow: none;
         }
-
-        h2 {
-            color: #2c3e50;
-            font-weight: 600;
-            margin-bottom: 30px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .content {
+          margin-left: 0;
+          width: 100%;
+          padding: 15px;
         }
-
-        .breadcrumb {
-            background-color: #ffffff;
-            border-radius: 8px;
-            padding: 10px 15px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        .breadcrumb-item a {
-            color: #007bff;
-            text-decoration: none;
-        }
-        .breadcrumb-item a:hover {
-            text-decoration: underline;
-        }
-        .breadcrumb-item.active {
-            color: #6c757d;
-        }
-
-        .search-container {
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .search-form {
-            max-width: 500px;
-            width: 100%;
-            display: flex;
-            gap: 10px;
-            background: white;
-            padding: 10px;
-            border-radius: 30px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-form input {
-            border: none;
-            border-radius: 20px;
-            padding: 12px 20px;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
-        }
-
-        .search-form input:focus {
-            outline: none;
-            background: white;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-        }
-
-        .search-form button {
-            border-radius: 20px;
-            padding: 12px 25px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .search-form button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 5px rgba(0, 123, 255, 0.3);
-        }
-
-        .order-table {
-            width: 100%;
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            border: none;
-        }
-
-        .order-table th {
-            background: #2c3e50;
-            color: white;
-            padding: 15px 20px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .order-table td {
-            padding: 20px;
-            vertical-align: middle;
-            border-bottom: 1px solid #eee;
-            color: #444;
-        }
-
-        .order-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .order-table tr:hover {
-            background: #f8f9fa;
-            transition: background 0.2s ease;
-        }
-
-        .order-table ul {
-            padding-left: 20px;
-            margin: 0;
-            color: #666;
-        }
-
-        .order-table ul li {
-            margin: 5px 0;
-        }
-
-        .btn-view {
-            background: #3498db;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }
-
-        .btn-view:hover {
-            background: #2980b9;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .status-pending { background: #ffc107; color: white; padding: 5px 10px; border-radius: 10px; }
-        .status-delivered { background: #28a745; color: white; padding: 5px 10px; border-radius: 10px; }
-        .status-cancelled { background: #dc3545; color: white; padding: 5px 10px; border-radius: 10px; }
-        .status-failed { background: #dc3545; color: white; padding: 5px 10px; border-radius: 10px; }
-        .status-returned { background: #6c757d; color: white; padding: 5px 10px; border-radius: 10px; }
-        .status-return-request { background: #17a2b8; color: white; padding: 5px 10px; border-radius: 10px; }
-
-        .pagination {
-            margin-top: 30px;
-        }
-
-        .page-link {
-            border: none;
-            color: #3498db;
-            padding: 10px 15px;
-            margin: 0 5px;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-        }
-
-        .page-link:hover {
-            background: #3498db;
-            color: white;
-        }
-
-        .page-item.active .page-link {
-            background: #3498db;
-            color: white;
-        }
-
-        .page-item.disabled .page-link {
-            color: #ccc;
-        }
-        .status-failed {
-    background-color: #dc3545; /* Red for failed */
-    color: white;
-    padding: 5px 20px;
-    border-radius: 10px;
-}
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 200px;
-            }
-            .content {
-                margin-left: 200px;
-                width: calc(100% - 200px);
-            }
-        }
-        @media (max-width: 576px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-                box-shadow: none;
-            }
-            .content {
-                margin-left: 0;
-                width: 100%;
-                padding: 15px;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="d-flex">
-        <div class="sidebar">
-            <h4 class="text-center text-white">User Dashboard</h4>
-            <a href="/account">Account</a>
-            <a href="/address-management">Address</a>
-            <a href="/orders">Orders</a>
-            <a href="/cart">Cart</a>
-            <a href="/wallet">Wallet</a>
-            <a href="/wishlist">Wishlist</a>
+      <div class="sidebar">
+        <h4 class="text-center text-white">User Dashboard</h4>
+        <a href="/account">Account</a>
+        <a href="/address-management">Address</a>
+        <a href="/orders">Orders</a>
+        <a href="/cart">Cart</a>
+        <a href="/wallet">Wallet</a>
+        <a href="/wishlist">Wishlist</a>
+      </div>
+
+      <div class="content">
+        <div class="container">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+              <li class="breadcrumb-item"><a href="/">Home</a></li>
+              <li class="breadcrumb-item active" aria-current="page">Orders</li>
+            </ol>
+          </nav>
+
+          <h2 class="text-center mb-4">Order List</h2>
+
+          <div class="search-container">
+            <form action="/orders" method="GET" class="search-form">
+              <input
+                type="text"
+                name="search"
+                class="form-control"
+                placeholder="Search by Product"
+                value="<%= typeof search !== 'undefined' ? search : '' %>"
+              />
+              <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+          </div>
+
+          <table class="order-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (orders && orders.length > 0) { %> <% orders.forEach(order=>
+              { %>
+              <tr>
+                <td>#<%= order.orderId %></td>
+                <td><%= new Date(order.createdOn).toLocaleDateString() %></td>
+                <td><%= order.userId.name || 'N/A' %></td>
+                <td>
+                  ₹<%= order.finalAmount ? order.finalAmount.toFixed(2) : '0'
+                  %>
+                </td>
+                <td>
+                  <% if (order.orderedItems && order.orderedItems.length > 0) {
+                  %> <% order.orderedItems.forEach(item => { %>
+                  <div>
+                    <%= item.product.productName %> (Qty: <%= item.quantity %>)
+                  </div>
+                  <% }) %> <% } else { %>
+                  <div>No items</div>
+                  <% } %>
+                </td>
+                <td><%= order.status || 'N/A' %></td>
+                <td>
+                  <a href="/user/orders/<%= order._id %>">View</a>
+                  <% if (order.status === 'Failed') { %>
+
+                  <button
+                    onclick="retryPayment('<%= order._id %>', '<%= order.finalAmount %>')"
+                  >
+                    Retry Payment
+                  </button>
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %> <% } else { %>
+              <tr>
+                <td colspan="7">
+                  <% if (typeof search !== 'undefined' && search) { %> No orders
+                  found for your search: <%= search %> <% } else { %> No orders
+                  found <% } %>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+
+          <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+              <% if (currentPage > 1) { %>
+              <li class="page-item">
+                <a
+                  class="page-link"
+                  href="/orders?page=<%= currentPage - 1 %><%= search ? '&search=' + search : '' %>"
+                  >Previous</a
+                >
+              </li>
+              <% } else { %>
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+              <% } %> <% for (let i = 1; i <= totalPages; i++) { %>
+              <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                <a
+                  class="page-link"
+                  href="/orders?page=<%= i %><%= search ? '&search=' + search : '' %>"
+                  ><%= i %></a
+                >
+              </li>
+              <% } %> <% if (currentPage < totalPages) { %>
+              <li class="page-item">
+                <a
+                  class="page-link"
+                  href="/orders?page=<%= currentPage + 1 %><%= search ? '&search=' + search : '' %>"
+                  >Next</a
+                >
+              </li>
+              <% } else { %>
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+              <% } %>
+            </ul>
+          </nav>
         </div>
-
-        <div class="content">
-            <div class="container">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="/">Home</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Orders</li>
-                    </ol>
-                </nav>
-
-                <h2 class="text-center mb-4">Order List</h2>
-                
-                <div class="search-container">
-                    <form action="/orders" method="GET" class="search-form">
-                        <input 
-                            type="text" 
-                            name="search" 
-                            class="form-control" 
-                            placeholder="Search by Product"
-                            value="<%= typeof search !== 'undefined' ? search : '' %>"
-                        >
-                        <button type="submit" class="btn btn-primary">Search</button>
-                    </form>
-                </div>
-                
-                <table class="order-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Date</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Items</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (!orders || orders.length === 0) { %>
-                            <tr>
-                                <td colspan="7">
-                                    <%= typeof search !== 'undefined' && search ? 'No orders found matching your search' : 'No orders found' %>
-                                </td>
-                            </tr>
-                        <% } else { %>
-                            <% orders.forEach(order => { %>
-                                <tr>
-                                    <td>#<%= order.orderId %></td>
-                                    <td><%= order.createdOn ? new Date(order.createdOn).toDateString() : 'Unknown' %></td>
-                                    <td><%= order.userId?.name || 'Unknown' %></td>
-                                    <td>₹ <%= order.finalAmount %></td>
-                                    <td>
-                                        <% if (order.orderedItems && order.orderedItems.length > 0) { %>
-                                            <ul>
-                                                <% order.orderedItems.forEach(item => { %>
-                                                    <li>
-                                                        <%= item.product?.productName || 'Unknown Product' %> 
-                                                        (Qty: <%= item.quantity %>)
-                                                    </li>
-                                                <% }) %>
-                                            </ul>
-                                        <% } else { %>
-                                            No items
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge status-<%= order.status ? order.status.toLowerCase().replace(' ', '-') : 'pending' %>">
-                                            <%= order.status || 'Pending' %>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="/viewOrder?orderId=<%= order._id %>" class="btn btn-view">View</a>
-                                        <% if (order.status === 'Failed') { %>
-                                            <a href="/retryPayment?orderId=<%= order._id %>" class="btn btn-primary btn-sm ms-2">Retry Payment</a>
-                                        <% } %>
-                                    </td>
-                                </tr>
-                            <% }) %>
-                        <% } %>
-                    </tbody>
-                </table>
-
-                <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <% if (currentPage > 1) { %>
-                            <li class="page-item">
-                                <a class="page-link" href="/orders?page=<%= currentPage - 1 %><%= search ? '&search=' + search : '' %>">Previous</a>
-                            </li>
-                        <% } else { %>
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" tabindex="-1">Previous</a>
-                            </li>
-                        <% } %>
-
-                        <% for (let i = 1; i <= totalPages; i++) { %>
-                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                <a class="page-link" href="/orders?page=<%= i %><%= search ? '&search=' + search : '' %>"><%= i %></a>
-                            </li>
-                        <% } %>
-
-                        <% if (currentPage < totalPages) { %>
-                            <li class="page-item">
-                                < universitario <a class="page-link" href="/orders?page=<%= currentPage + 1 %><%= search ? '&search=' + search : '' %>">Next</a>
-                            </li>
-                        <% } else { %>
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#">Next</a>
-                            </li>
-                        <% } %>
-                    </ul>
-                </nav>
-            </div>
-        </div>
+      </div>
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    // <script>
+    //   async function retryPayment(orderId, finalAmount) {
+    //     console.log(
+    //       "here is the order id  and finalAmount=>",
+    //       orderId,
+    //       finalAmount
+    //     );
+
+    //     const razorpayResponse = await fetch("/create-razorpay-retry-payment", {
+    //       method: "POST",
+    //       headers: { "Content-Type": "application/json" },
+    //       body: JSON.stringify({ amount: finalAmount, orderId }),
+    //     });
+    //     const razorpayData = await razorpayResponse.json();
+    //     if (!razorpayData.success) {
+    //       Swal.fire(
+    //         "Error",
+    //         razorpayData.message || "Failed to initiate payment.",
+    //         "error"
+    //       );
+    //       return;
+    //     }
+    //     try {
+    //       const options = {
+    //         key: "<%= process.env.RAZORPAY_KEY_ID %>",
+    //         amount: finalAmount * 100,
+    //         currency: "INR",
+    //         order_id: razorpayData.orderId,
+    //         name: "Aura Candles",
+    //         description: "Order Payment",
+    //         handler: async function (response) {
+    //           try {
+    //             const paymentResponse = await fetch("/order-payment-status", {
+    //               method: "POST",
+    //               headers: { "Content-Type": "application/json" },
+    //               body: JSON.stringify({
+    //                 paymentStatus: "Success",
+    //                 orderId,
+    //               }),
+    //             });
+    //             const data = await paymentResponse.json();
+    //             if (data.success) {
+    //               Swal.fire(
+    //                 "Success",
+    //                 "Retry Payment Successful",
+    //                 "success"
+    //               ).then(() => {
+    //                 window.location.reload();
+    //               });
+    //             } else {
+    //               Swal.fire(
+    //                 "Success",
+    //                 "Retry Payment Successful",
+    //                 "success"
+    //               ).then(() => {
+    //                 window.location.reload();
+    //               });
+    //             }
+    //           } catch (error) {
+    //             console.error("Order placement error:", error);
+    //             window.location.href = `/order-failure?cartId=${cartId}&reason=${encodeURIComponent(
+    //               "Network error during order placement"
+    //             )}`;
+    //           }
+    //         },
+    //         prefill: {
+    //           name: "",
+    //           email: "",
+    //           contact: "",
+    //         },
+    //         theme: {
+    //           color: "#3399cc",
+    //         },
+    //         modal: {
+    //           ondismiss: async function () {
+    //             console.log("Payment Failed");
+    //             // try {
+
+    //             //   const data = await paymentResponse.json();
+    //             //   window.location.href = `/order-failure?cartId=${cartId}&reason=${encodeURIComponent(
+    //             //     "Payment cancelled by user"
+    //             //   )}&orderId=${data.orderId}`;
+    //             // } catch (error) {
+    //             //   console.error("Failed order creation error:", error);
+    //             //   window.location.href = `/order-failure?cartId=${cartId}&reason=${encodeURIComponent(
+    //             //     "Failed to create order after cancellation"
+    //             //   )}`;
+    //             // }
+    //           },
+    //         },
+    //         // notes: {
+    //         //   addressId,
+    //         //   cartId,
+    //         //   finalAmount,
+    //         //   // orderId
+    //         // },
+    //       };
+    //       const rzp1 = new Razorpay(options);
+    //       //   rzp1.on("payment.failed", async function (response) {
+    //       //     try {
+    //       //       const paymentResponse = await fetch("/create-order", {
+    //       //         method: "POST",
+    //       //         headers: { "Content-Type": "application/json" },
+    //       //         body: JSON.stringify({
+    //       //           addressId,
+    //       //           cartId,
+    //       //           paymentMethod: "Razorpay",
+    //       //           finalAmount,
+    //       //           paymentId: response.error.metadata.payment_id,
+    //       //           paymentStatus: "Failed",
+    //       //           //orderId
+    //       //         }),
+    //       //       });
+    //       //       const data = await paymentResponse.json();
+    //       //       window.location.href = `/order-failure?cartId=${cartId}&reason=${encodeURIComponent(
+    //       //         "Payment failed: " + response.error.description
+    //       //       )}&orderId=${data.orderId}`;
+    //       //     } catch (error) {
+    //       //       console.error("Failed order creation error:", error);
+    //       //       window.location.href = `/order-failure?cartId=${cartId}&reason=${encodeURIComponent(
+    //       //         "Failed to create order after payment failure"
+    //       //       )}`;
+    //       //     }
+    //       //   });
+    //       rzp1.open();
+    //     } catch (error) {
+    //       console.error("Razorpay order creation error:", error);
+    //       Swal.fire("Error", "Failed to initiate payment.", "error");
+    //     }
+    //   }
+    // </script>
+
+    <script>
+  async function retryPayment(orderId, finalAmount) {
+    console.log("Order ID and Final Amount:", orderId, finalAmount);
+
+    try {
+      // Create a new Razorpay order for the retry payment
+      const razorpayResponse = await fetch("/create-razorpay-retry-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: finalAmount, orderId }),
+      });
+      const razorpayData = await razorpayResponse.json();
+      if (!razorpayData.success) {
+        Swal.fire(
+          "Error",
+          razorpayData.message || "Failed to initiate payment.",
+          "error"
+        );
+        return;
+      }
+
+      const options = {
+        key: "<%= process.env.RAZORPAY_KEY_ID %>",
+        amount: finalAmount * 100, // Convert to paise
+        currency: "INR",
+        order_id: razorpayData.orderId,
+        name: "Aura Candles",
+        description: "Retry Order Payment",
+        handler: async function (response) {
+          try {
+            // Update payment and order status
+            const paymentResponse = await fetch("/order-payment-status", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                paymentStatus: "Success",
+                orderId,
+                paymentId: response.razorpay_payment_id, // Include paymentId
+              }),
+            });
+            const paymentData = await paymentResponse.json();
+            if (paymentData.success) {
+              Swal.fire("Success", "Payment Successful", "success").then(() => {
+                window.location.href = `/order-placed?orderId=${orderId}`;
+              });
+            } else {
+              Swal.fire(
+                "Error",
+                paymentData.message || "Failed to update payment status",
+                "error"
+              );
+            }
+          } catch (error) {
+            console.error("Payment status update error:", error);
+            Swal.fire("Error", "Network error during payment update", "error");
+          }
+        },
+        prefill: {
+          name: "",
+          email: "",
+          contact: "",
+        },
+        theme: {
+          color: "#3399cc",
+        },
+        modal: {
+          ondismiss: async function () {
+            console.log("Payment cancelled by user");
+            Swal.fire("Info", "Payment was cancelled", "info");
+          },
+        },
+      };
+
+      const rzp1 = new Razorpay(options);
+      rzp1.on("payment.failed", async function (response) {
+        try {
+          // Update order status to Failed
+          const paymentResponse = await fetch("/order-payment-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              paymentStatus: "Failed",
+              orderId,
+              paymentId: response.error.metadata.payment_id,
+            }),
+          });
+          const paymentData = await paymentResponse.json();
+          if (paymentData.success) {
+            Swal.fire("Error", "Payment failed", "error").then(() => {
+              window.location.href = `/order-failure?orderId=${orderId}&reason=${encodeURIComponent(
+                "Payment failed: " + response.error.description
+              )}`;
+            });
+          } else {
+            Swal.fire(
+              "Error",
+              paymentData.message || "Failed to update payment status",
+              "error"
+            );
+          }
+        } catch (error) {
+          console.error("Failed payment status update error:", error);
+          Swal.fire(
+            "Error",
+            "Failed to update order after payment failure",
+            "error"
+          );
+        }
+      });
+      rzp1.open();
+    } catch (error) {
+      console.error("Razorpay order creation error:", error);
+      Swal.fire("Error", "Failed to initiate payment.", "error");
+    }
+  }
+</script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-</body>
+  </body>
 </html>

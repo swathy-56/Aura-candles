@@ -1,7 +1,8 @@
- <%- include("../../views/partials/admin/header") %>
+<%- include("../../views/partials/admin/header") %>
 <style>
   .pagination-container {
     text-align: center;
+    margin-top: 20px;
   }
   .pagination {
     display: inline-block;
@@ -22,6 +23,97 @@
   }
   .error-message {
     color: red;
+    font-size: 0.9em;
+    margin-top: 5px;
+    display: none;
+  }
+  .input-error {
+    border-color: red !important;
+  }
+
+  /* Toast Styles */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1055;
+  }
+
+  .toast {
+    background: rgba(255, 245, 230, 0.95); /* Creamy off-white */
+    border: 1px solid #e8d7b0;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    min-width: 300px;
+  }
+
+  .toast-success {
+    background: rgba(46, 204, 113, 0.95); /* Soft green for success */
+    color: #ffffff;
+  }
+
+  .toast-error {
+    background: rgba(231, 76, 60, 0.95); /* Soft red for errors */
+    color: #ffffff;
+  }
+
+  .toast-confirm {
+    background: rgba(255, 245, 230, 0.95); /* Creamy off-white for confirmation */
+    color: #4a2c0b;
+  }
+
+  .toast-header {
+    background: transparent;
+    border-bottom: none;
+    color: #4a2c0b; /* Rich brown */
+    font-family: 'Lato', sans-serif;
+    font-weight: 500;
+  }
+
+  .toast-success .toast-header,
+  .toast-error .toast-header {
+    color: #ffffff;
+  }
+
+  .toast-body {
+    color: #4a2c0b;
+    font-family: 'Lato', sans-serif;
+  }
+
+  .toast-success .toast-body,
+  .toast-error .toast-body {
+    color: #ffffff;
+  }
+
+  .toast-confirm .toast-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .toast-confirm .btn {
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 0.9em;
+  }
+
+  .toast-confirm .btn-confirm {
+    background-color: #d33;
+    color: #ffffff;
+  }
+
+  .toast-confirm .btn-cancel {
+    background-color: #3085d6;
+    color: #ffffff;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 576px) {
+    .toast-container {
+      top: 10px;
+      right: 10px;
+      width: calc(100% - 20px);
+    }
   }
 </style>
 <section class="content-main">
@@ -30,24 +122,60 @@
       <h2 class="content-title card-title">Brands</h2>
     </div>
   </div>
+  <!-- Toast Container -->
+  <div class="toast-container">
+    <% if (messages.success) { %>
+      <div class="toast toast-success" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+        <div class="toast-header">
+          <strong class="me-auto">Success</strong>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          <%= messages.success %>
+        </div>
+      </div>
+    <% } %>
+    <% if (messages.error) { %>
+      <div class="toast toast-error" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+        <div class="toast-header">
+          <strong class="me-auto">Error</strong>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+          <%= messages.error %>
+        </div>
+      </div>
+    <% } %>
+  </div>
   <div class="card">
     <div class="card-body">
       <div class="row">
         <div class="col-md-3">
-          <form method="post" action="/admin/addBrand" enctype="multipart/form-data">
+          <form method="post" action="/admin/addBrand" enctype="multipart/form-data" id="brandForm" onsubmit="return validateForm()">
             <div class="mb-4">
-              <label for="product_name" class="form-label">Brand Name</label>
+              <label for="brand_name" class="form-label">Brand Name</label>
               <input
                 type="text"
                 name="name"
+                id="brand_name"
                 placeholder="Type here"
                 class="form-control"
+                maxlength="50"
               />
+              <div id="nameError" class="error-message">Brand name is required and must be 2-50 characters long</div>
             </div>
-            <label for="product_name" class="form-label">Brand Image</label>
+            <label for="brand_image" class="form-label">Brand Image</label>
             <div class="input-upload">
-              <img src="" alt=""/>
-              <input class="form-control border" name="image" type="file" />
+              <img src="" alt="Brand Preview" id="imagePreview"/>
+              <input 
+                class="form-control border" 
+                name="image" 
+                id="brand_image" 
+                type="file"
+                accept="image/jpeg,image/png,image/jpg"
+                onchange="previewImage(this)"
+              />
+              <div id="imageError" class="error-message">Please select a valid image file (jpg, png, jpeg)</div>
             </div>
             <div class="d-grid">
               <button class="btn btn-primary mt-20" type="submit">
@@ -68,7 +196,7 @@
                 </tr>
               </thead>
               <tbody>
-                <% data.reverse().forEach((brand, index) => { %>
+                <% data.forEach((brand) => { %>
                 <tr>
                   <td class="text-start"><%= brand.brandName %></td>
                   <td class="text-start">
@@ -77,7 +205,7 @@
                       style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden;"
                     >
                       <img
-                        src="/uploads/re-image/<%= brand.brandImage[0] %>"
+                        src="/Uploads/re-image/<%= brand.brandImage[0] %>"
                         alt="<%= brand.brandName %>"
                         class="img-fluid rounded-circle"
                         style="width: 100%; height: auto"
@@ -93,16 +221,15 @@
                   </td>
                   <td class="text-start">
                     <% if (brand.isBlocked === false) { %>
-                      <button class="btn btn-danger" style="width: 90px" onclick="updateBrandStatus('<%= brand._id %>', true)">
+                      <button class="btn btn-danger" style="width: 90px" onclick="showConfirmToast('<%= brand._id %>', true)">
                         Block
-                    </button>
+                      </button>
                     <% } else { %>
-                      <button class="btn btn-success" style="width: 90px" onclick="updateBrandStatus('<%= brand._id %>', false)">
+                      <button class="btn btn-success" style="width: 90px" onclick="showConfirmToast('<%= brand._id %>', false)">
                         Unblock
-                    </button>
+                      </button>
                     <% } %>
-                    
-                    <button class="btn btn-danger" style="width: 90px" onclick="confirmDelete('<%= brand._id %>')">
+                    <button class="btn btn-danger" style="width: 90px" onclick="showDeleteConfirmToast('<%= brand._id %>')">
                       <span class="text-white">Delete</span>
                     </button>
                   </td>
@@ -115,74 +242,262 @@
       </div>
     </div>
   </div>
-  <div class="pagination-container"></div>
+  <div class="pagination-container">
+    <div class="pagination">
+      <% if (totalPages > 1) { %>
+        <!-- Previous button -->
+        <% if (currentPage > 1) { %>
+          <a href="?page=<%= currentPage - 1 %>">Previous</a>
+        <% } %>
+        <!-- Page numbers -->
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <% if (i === currentPage) { %>
+            <span class="current-page"><%= i %></span>
+          <% } else { %>
+            <a href="?page=<%= i %>"><%= i %></a>
+          <% } %>
+        <% } %>
+        <!-- Next button -->
+        <% if (currentPage < totalPages) { %>
+          <a href="?page=<%= currentPage + 1 %>">Next</a>
+        <% } %>
+      <% } %>
+    </div>
+  </div>
 </section>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+  // Initialize toasts on page load
+  document.querySelectorAll('.toast').forEach(toast => {
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => {
+      toast.remove();
+    });
+  });
+
+  // Function to show toast notifications
+  function showToast(message, type = 'error') {
+    const toastContainer = document.querySelector('.toast-container');
+    const toast = document.createElement('div');
+    toast.classList.add('toast', `toast-${type}`);
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.setAttribute('data-bs-autohide', 'true');
+    toast.setAttribute('data-bs-delay', '5000');
+
+    toast.innerHTML = `
+      <div class="toast-header">
+        <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+        <button type="button" class="btn-close ${type === 'success' || type === 'error' ? 'btn-close-white' : ''}" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        ${message}
+      </div>
+    `;
+
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => {
+      toast.remove();
+    });
+  }
+
+  // Function to show confirmation toast for block/unblock
+  function showConfirmToast(brandId, isBlocking) {
+    const toastContainer = document.querySelector('.toast-container');
+    const toast = document.createElement('div');
+    toast.classList.add('toast', 'toast-confirm');
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.setAttribute('data-bs-autohide', 'false');
+
+    const action = isBlocking ? 'block' : 'unblock';
+    toast.innerHTML = `
+      <div class="toast-header">
+        <strong class="me-auto">Confirm ${action.charAt(0).toUpperCase() + action.slice(1)}</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        <p>Are you sure you want to ${action} this brand?</p>
+        <div class="d-flex justify-content-end gap-2">
+          <button class="btn btn-confirm" onclick="updateBrandStatus('${brandId}', ${isBlocking})">Confirm</button>
+          <button class="btn btn-cancel" data-bs-dismiss="toast">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => {
+      toast.remove();
+    });
+  }
+
+  // Function to show confirmation toast for delete
+  function showDeleteConfirmToast(brandId) {
+    const toastContainer = document.querySelector('.toast-container');
+    const toast = document.createElement('div');
+    toast.classList.add('toast', 'toast-confirm');
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    toast.setAttribute('data-bs-autohide', 'false');
+
+    toast.innerHTML = `
+      <div class="toast-header">
+        <strong class="me-auto">Confirm Delete</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        <p>You won't be able to revert this!</p>
+        <div class="d-flex justify-content-end gap-2">
+          <button class="btn btn-confirm" onclick="confirmDelete('${brandId}')">Yes, delete it!</button>
+          <button class="btn btn-cancel" data-bs-dismiss="toast">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    toast.addEventListener('hidden.bs.toast', () => {
+      toast.remove();
+    });
+  }
+
+  // Validate image file type
+  function validateImageType(file) {
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    return file && validImageTypes.includes(file.type);
+  }
+
+  // Validate form on submission
+  function validateForm() {
+    let isValid = true;
+    const nameInput = document.getElementById('brand_name');
+    const imageInput = document.getElementById('brand_image');
+    const nameError = document.getElementById('nameError');
+    const imageError = document.getElementById('imageError');
+
+    // Reset error states
+    nameInput.classList.remove('input-error');
+    imageInput.classList.remove('input-error');
+    nameError.style.display = 'none';
+    imageError.style.display = 'none';
+
+    // Validate brand name
+    const name = nameInput.value.trim();
+    if (name.length < 2 || name.length > 50) {
+      nameInput.classList.add('input-error');
+      nameError.style.display = 'block';
+      isValid = false;
+    }
+
+    // Validate image
+    if (imageInput.files.length === 0) {
+      imageInput.classList.add('input-error');
+      imageError.textContent = 'Please select an image file';
+      imageError.style.display = 'block';
+      isValid = false;
+    } else {
+      const file = imageInput.files[0];
+      if (!validateImageType(file)) {
+        imageInput.classList.add('input-error');
+        imageError.textContent = 'Please select a valid image file (jpg, png, jpeg)';
+        imageError.style.display = 'block';
+        isValid = false;
+      }
+    }
+
+    return isValid;
+  }
+
+  // Preview image and validate
+  function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    const imageError = document.getElementById('imageError');
+    const file = input.files[0];
+
+    // Reset error states
+    input.classList.remove('input-error');
+    imageError.style.display = 'none';
+    imageError.textContent = '';
+    preview.src = '';
+
+    if (file) {
+      if (validateImageType(file)) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        input.classList.add('input-error');
+        imageError.textContent = 'Please select a valid image file (jpg, png, jpeg)';
+        imageError.style.display = 'block';
+        showToast('Invalid file type. Please select a jpg, png, or jpeg image.', 'error');
+        input.value = ''; // Clear the invalid file
+      }
+    }
+  }
+
+  // Update brand status (block/unblock)
   async function updateBrandStatus(brandId, isBlocking) {
     const url = isBlocking ? '/admin/blockBrand' : '/admin/unBlockBrand';
-    const confirmMessage = isBlocking
-        ? 'Are you sure you want to block this brand?'
-        : 'Are you sure you want to unblock this brand?';
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: brandId })
+      });
 
-    if (confirm(confirmMessage)) {
-        try {
-            const response = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ id: brandId })
-            });
-
-            if (response.ok) {
-                window.location.reload(); // Reload to update status
-            } else {
-                const errorData = await response.json();
-                alert(errorData.message || 'Error processing request');
-            }
-        } catch (error) {
-            console.error('Error updating brand status:', error);
-            alert('Something went wrong. Please try again.');
-        }
+      const result = await response.json();
+      if (response.ok) {
+        showToast(result.message, 'success');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000); // Delay reload to show toast
+      } else {
+        showToast(result.message || 'Error processing request', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating brand status:', error);
+      showToast('Something went wrong. Please try again.', 'error');
     }
-}
+  }
 
+  // Delete brand
+  async function confirmDelete(brandId) {
+    try {
+      const response = await fetch(`/admin/deleteBrand`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: brandId })
+      });
 
-async function confirmDelete(brandId) {
-    Swal.fire({
-        title: "Are you sure?",
-        text: "You won't be able to revert this!",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Yes, delete it!"
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            try {
-                const response = await fetch(`/admin/deleteBrand`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: brandId })
-                });
-
-                if (response.ok) {
-                    Swal.fire('Deleted!', 'Brand has been deleted.', 'success').then(() => {
-                        window.location.reload();
-                    });
-                } else {
-                    Swal.fire('Error!', 'Error deleting brand.', 'error');
-                }
-            } catch (error) {
-                console.error('Error deleting brand:', error);
-                Swal.fire('Error!', 'An error occurred while deleting the brand.', 'error');
-            }
-        }
-    });
-}
-
+      const result = await response.json();
+      if (response.ok) {
+        showToast(result.message, 'success');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000); // Delay reload to show toast
+      } else {
+        showToast(result.message || 'Error deleting brand', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting brand:', error);
+      showToast('An error occurred while deleting the brand.', 'error');
+    }
+  }
 </script>
 <%- include("../../views/partials/admin/footer") %>

@@ -8,14 +8,14 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Male-Fashion</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" />
-    <link rel="stylesheet" href="css/font-awesome.min.css" type="text/css" />
-    <link rel="stylesheet" href="css/elegant-icons.css" type="text/css" />
-    <link rel="stylesheet" href="css/magnific-popup.css" type="text/css" />
-    <link rel="stylesheet" href="css/nice-select.css" type="text/css" />
-    <link rel="stylesheet" href="css/owl.carousel.min.css" type="text/css" />
-    <link rel="stylesheet" href="css/slicknav.min.css" type="text/css" />
-    <link rel="stylesheet" href="css/style.css" type="text/css" />
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="/css/font-awesome.min.css" type="text/css" />
+    <link rel="stylesheet" href="/css/elegant-icons.css" type="text/css" />
+    <link rel="stylesheet" href="/css/magnific-popup.css" type="text/css" />
+    <link rel="stylesheet" href="/css/nice-select.css" type="text/css" />
+    <link rel="stylesheet" href="/css/owl.carousel.min.css" type="text/css" />
+    <link rel="stylesheet" href="/css/slicknav.min.css" type="text/css" />
+    <link rel="stylesheet" href="/css/style.css" type="text/css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
@@ -119,12 +119,12 @@
             <div class="heading_s1">
                 <h3>Email Verification Page</h3>
             </div>
-            <form id="otpForm" action="/verify-otp" method="post" onsubmit="return validateOTPForm()">
+            <form id="otpForm" onsubmit="validateOTPForm(); return false;">
                 <div class="form-group">
                     <label for="otp">Enter OTP:</label>
                     <input type="text" id="otp" name="otp" class="form-control" required maxlength="6" pattern="\d*" />
                 </div>
-                <button type="submit" class="btn btn-primary" >Verify Email</button>
+                <button type="submit" class="btn btn-primary">Verify Email</button>
                 <div class="form-group text-center">
                     <div id="otpTimer" class="otp-timer">
                         <span id="timerValue">60</span>
@@ -132,7 +132,7 @@
                     <button type="button" class="btn btn-secondary" onclick="resendOTP()">Resend OTP</button>
                 </div>
                 <% if (locals.message && message.length > 0) { %>
-                <div class="alert alert-danger"><%= message %></div>
+                    <div class="alert alert-danger"><%= message %></div>
                 <% } %>
             </form>
             <div class="text-muted text-center pt-25">
@@ -163,74 +163,90 @@
     }
     startTimer();
 
-    function validateOTPForm(){
-        const otpInput=document.getElementById('otp').value;
+    function validateOTPForm() {
+        const otpInput = document.getElementById('otp').value;
 
         $.ajax({
-            type:'post',
-            url:'/verify-otp',
-            data:{otp:otpInput},
-            success:function(response){
-              if(response.success){
-                Swal.fire({
-                    icon:'success',
-                    title:'OTP verified successfully',
-                    showConfirmButton:false,
-                    timer:1500,
-                }).then(()=>{
-                    window.location.href=response.redirectUrl;
-                })
-              }else{
-                Swal.fire({
-                    icon:'error',
-                    title:Error,
-                    text:response.message
-                })
-              }
+            type: 'POST',
+            url: '/verify-otp',
+            data: { otp: otpInput },
+            success: function(response) {
+                console.log('Server response:', response);
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'OTP verified successfully',
+                        showConfirmButton: false,
+                        timer: 1500,
+                    }).then(() => {
+                        window.location.href = response.redirectUrl;
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.message || 'An error occurred',
+                    });
+                }
             },
-            error:function(){
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', { status, error, response: xhr.responseText });
+                let errorMessage = 'Failed to verify OTP. Please try again.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.message || errorMessage;
+                } catch (e) {
+                    console.error('Failed to parse error response:', e);
+                }
                 Swal.fire({
-                    icon:'error',
-                    title:'Invalid OTP',
-                    text:'Please try again'
-                })
-            }
-        })
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                });
+            },
+        });
         return false;
     }
 
-
-    function resendOTP(){
+    function resendOTP() {
         clearInterval(timerInterval);
-        time=60;
-        document.getElementById('otp').disabled=false;
+        timer = 60;
+        document.getElementById('otp').disabled = false;
         document.getElementById('timerValue').classList.remove('expired');
-        
+        document.getElementById('timerValue').textContent = timer;
+
         startTimer();
         $.ajax({
-            type:'post',
-            url:'/resend-otp',
-            success:function(response){
-                if(response.success){
-
+            type: 'POST',
+            url: '/resend-otp',
+            success: function(response) {
+                console.log('Resend OTP response:', response);
+                if (response.success) {
                     Swal.fire({
-                        icon:'success',
-                        title:'OTP Resend Successfully',
-                        showConfirmButton:false,
-                        timer:1500
-                    })
-                }else{
+                        icon: 'success',
+                        title: 'OTP Resend Successfully',
+                        showConfirmButton: false,
+                        timer: 1500,
+                    });
+                } else {
                     Swal.fire({
-                        icon:'error',
-                        title:Error,
-                        text:'An error occured while resending OTP.Please try again'
-                    })
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.message || 'An error occurred while resending OTP.',
+                    });
                 }
-            }
-        })
+            },
+            error: function(xhr, status, error) {
+                console.error('Resend OTP AJAX error:', { status, error, response: xhr.responseText });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to resend OTP. Please try again.',
+                });
+            },
+        });
         return false;
     }
-
 </script>
 <%- include("../../views/partials/user/footer") %>
 </body>

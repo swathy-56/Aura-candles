@@ -25,19 +25,66 @@
         }
         .error-message {
             color: red;
+            font-size: 0.9em;
+            margin-top: 5px;
             display: none;
         }
         .image-cropper {
             display: none;
-            width: 300px;
-            height: 200px;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 20px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .cropper-wrapper {
+            max-width: 400px;
+            width: 100%;
+        }
+        .cropper-image {
+            max-width: 100%;
+            display: block;
+        }
+        .cropper-controls {
+            display: flex;
+            gap: 10px;
         }
         .add-image-container {
             margin-top: 20px;
         }
+        /* Toast Styling */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        .toast {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            max-width: 300px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .toast .toast-close {
+            cursor: pointer;
+            float: right;
+            font-weight: bold;
+            margin-left: 10px;
+        }
     </style>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css" />
 </head>
 
 <section class="content-main">
@@ -50,6 +97,8 @@
         <div class="col-lg-6">
             <div class="card mb-4">
                 <div class="card-body">
+                    <!-- Toast Container -->
+                    <div class="toast-container" id="toastContainer"></div>
                     <form method="post" action="/admin/editProduct/<%=product._id%>" enctype="multipart/form-data"
                         onsubmit="return validateForm()">
                         <div class="mb-4">
@@ -83,14 +132,6 @@
                                     <input placeholder="₹" name="regularPrice" type="text"
                                         value="<%=product.regularPrice%>" class="form-control border">
                                     <div id="regularPrice-error" class="error-message"></div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4">
-                                <div class="mb-4">
-                                    <label class="form-label">Sale price</label>
-                                    <input name="salePrice" type="text" value="<%=product.salePrice%>"
-                                        class="form-control border">
-                                    <div id="salePrice-error" class="error-message"></div>
                                 </div>
                             </div>
                             <div class="col-lg-4">
@@ -147,11 +188,16 @@
                                                         class="fa-solid fa-x delete-icon" style="cursor: pointer;"></i>
                                                     <i onclick="triggerImageEdit(<%= i %>)" class="fa-solid fa-edit edit-icon"></i>
                                                 </div>
-                                                <input type="file" name="images" id="input<%= i %>" accept="image/png, image/jpeg, image/jpg"
+                                                <input type="file" name="images" id="input<%= i %>" accept="image/png,image/jpeg,image/jpg"
                                                     style="display: none;" onchange="viewImage(event, <%= i %>)">
-                                                <div class="image-cropper d-flex align-items-center">
-                                                    <img src="" id="croppedImg<%= i %>" alt="">
-                                                    <button type="button" id="saveButton<%= i %>" class="btn-sm btn-primary">Save</button>
+                                                <div class="image-cropper" id="cropper<%= i %>">
+                                                    <div class="cropper-wrapper">
+                                                        <img src="" id="cropperImg<%= i %>" class="cropper-image" alt="Cropper">
+                                                    </div>
+                                                    <div class="cropper-controls">
+                                                        <button type="button" id="saveButton<%= i %>" class="btn btn-sm btn-primary">Save Crop</button>
+                                                        <button type="button" id="cancelButton<%= i %>" class="btn btn-sm btn-secondary">Cancel</button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         <% } %>
@@ -162,11 +208,16 @@
                                         <div class="add-image-container" id="newImage0">
                                             <label class="form-label">Add New Image</label>
                                             <input class="form-control" type="file" name="images" id="inputNew0"
-                                                accept="image/png, image/jpeg, image/jpg" onchange="viewImage(event, 'New0')">
+                                                accept="image/png,image/jpeg,image/jpg" onchange="viewImage(event, 'New0')">
                                             <img src="" alt="" id="imgViewNew0" style="width: 300px; height: 400px; display: none; margin-top: 10px;">
-                                            <div class="image-cropper d-flex align-items-center">
-                                                <img src="" id="croppedImgNew0" alt="">
-                                                <button type="button" id="saveButtonNew0" class="btn-sm btn-primary">Save</button>
+                                            <div class="image-cropper" id="cropperNew0">
+                                                <div class="cropper-wrapper">
+                                                    <img src="" id="cropperImgNew0" class="cropper-image" alt="Cropper">
+                                                </div>
+                                                <div class="cropper-controls">
+                                                    <button type="button" id="saveButtonNew0" class="btn btn-sm btn-primary">Save Crop</button>
+                                                    <button type="button" id="cancelButtonNew0" class="btn btn-sm btn-secondary">Cancel</button>
+                                                </div>
                                             </div>
                                         </div>
                                     <% } %>
@@ -189,12 +240,52 @@
     </div>
 </section>
 
-<script src="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.js"></script>
-<%- include("../../views/partials/admin/footer") %>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" integrity="sha512-JyCZjCOZoyeQZSd5+YEAcFgz2fowJ1F1hyJOXgtKu4llIa0KneLcidn5bwfutiehUTiOuK87A986BZJMko0eWQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
     let newImageCounter = <%= product.productImage && product.productImage.length > 0 ? 0 : 1 %>;
     const maxImages = 4;
+    let croppers = {};
+
+    // Function to show toast notification
+    function showToast(message) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+            ${message}
+            <span class="toast-close">×</span>
+        `;
+        toastContainer.appendChild(toast);
+
+        // Show toast
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+
+        // Auto-hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+
+        // Allow manual close
+        toast.querySelector('.toast-close').addEventListener('click', () => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        });
+    }
+
+    // Validate image file type
+    function validateImageType(file) {
+        const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        return file && validImageTypes.includes(file.type);
+    }
 
     function validateForm() {
         clearErrorMessages();
@@ -202,15 +293,14 @@
         const description = document.getElementsByName('descriptionData')[0].value;
         const brand = document.getElementsByName('brand')[0].value;
         const price = document.getElementsByName('regularPrice')[0].value;
-        const saleprice = document.getElementsByName('salePrice')[0].value;
         const size = document.getElementsByName('size')[0].value;
         const category = document.getElementsByName('category')[0].value;
         const quantity = document.getElementsByName('quantity')[0].value;
         const images = document.querySelectorAll('input[name="images"]');
         const existingImages = document.querySelectorAll('input[name="existingImages[]"]');
-        let hasImages = existingImages.length > 0 || Array.from(images).some(input => input.files.length > 0);
 
         let isValid = true;
+
         if (name.trim() === "") {
             displayErrorMessage('productName-error', 'Please enter a product name.');
             isValid = false;
@@ -227,18 +317,23 @@
             displayErrorMessage('regularPrice-error', 'Please enter a valid non-negative price.');
             isValid = false;
         }
-        if (!/^\d+(\.\d{1,2})?$/.test(saleprice) || parseFloat(saleprice) < 0) {
-            displayErrorMessage('salePrice-error', 'Please enter a valid non-negative price.');
-            isValid = false;
-        }
         if (size.trim() === "") {
             displayErrorMessage('color-error', 'Please enter a size.');
             isValid = false;
         }
-        if (!hasImages) {
+        if (existingImages.length === 0 && !Array.from(images).some(input => input.files.length > 0)) {
             displayErrorMessage("images-error", 'Please select at least one image.');
             isValid = false;
         }
+
+        // Validate image file types
+        images.forEach((input, index) => {
+            if (input.files.length > 0 && !validateImageType(input.files[0])) {
+                displayErrorMessage('images-error', `Image ${index + 1} must be a valid image file (jpg, png, jpeg).`);
+                isValid = false;
+            }
+        });
+
         return isValid;
     }
 
@@ -266,7 +361,7 @@
         const totalImages = existingImages + newImages;
 
         if (totalImages >= maxImages) {
-            alert('You can only add up to 4 images.');
+            showToast('You can only add up to 4 images.');
             document.getElementById('addImageButton').style.display = 'none';
             return;
         }
@@ -278,11 +373,16 @@
         newInputDiv.innerHTML = `
             <label class="form-label">Add New Image</label>
             <input class="form-control" type="file" name="images" id="inputNew${newImageCounter}"
-                accept="image/png, image/jpeg, image/jpg" onchange="viewImage(event, 'New${newImageCounter}')">
+                accept="image/png,image/jpeg,image/jpg" onchange="viewImage(event, 'New${newImageCounter}')">
             <img src="" alt="" id="imgViewNew${newImageCounter}" style="width: 300px; height: 400px; display: none; margin-top: 10px;">
-            <div class="image-cropper d-flex align-items-center">
-                <img src="" id="croppedImgNew${newImageCounter}" alt="">
-                <button type="button" id="saveButtonNew${newImageCounter}" class="btn-sm btn-primary">Save</button>
+            <div class="image-cropper" id="cropperNew${newImageCounter}">
+                <div class="cropper-wrapper">
+                    <img src="" id="cropperImgNew${newImageCounter}" class="cropper-image" alt="Cropper">
+                </div>
+                <div class="cropper-controls">
+                    <button type="button" id="saveButtonNew${newImageCounter}" class="btn btn-sm btn-primary">Save Crop</button>
+                    <button type="button" id="cancelButtonNew${newImageCounter}" class="btn btn-sm btn-secondary">Cancel</button>
+                </div>
             </div>
         `;
         container.appendChild(newInputDiv);
@@ -294,42 +394,112 @@
     }
 
     function viewImage(event, index) {
-        let input = event.target;
-        let reader = new FileReader();
+        const input = event.target;
+        const file = input.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!validateImageType(file)) {
+            Swal.fire('Error', 'Please select a valid image file (jpg, png, jpeg)', 'error');
+            input.value = ''; // Clear the invalid file
+            document.getElementById(`imgView${index}`).src = ''; // Clear preview
+            document.getElementById(`imgView${index}`).style.display = 'none';
+            return;
+        }
+
+        const reader = new FileReader();
         reader.onload = function () {
-            let dataURL = reader.result;
-            let image = document.getElementById(`imgView${index}`);
-            image.style.display = 'block';
-            image.src = dataURL;
-            let cropper = new Cropper(image, {
-                aspectRatio: 1,
-                viewMode: 1,
-                guides: true,
-                background: false,
-                autoCropArea: 1,
-                zoomable: true
-            });
-            let cropperContainer = document.querySelector(`#croppedImg${index}`).parentNode;
-            cropperContainer.style.display = 'flex';
-            let saveButton = document.querySelector(`#saveButton${index}`);
-            saveButton.addEventListener('click', async function () {
-                let croppedCanvas = cropper.getCroppedCanvas();
-                let croppedImage = document.getElementById(`croppedImg${index}`);
-                croppedImage.src = croppedCanvas.toDataURL('image/jpeg', 1.0);
-                let timestamp = new Date().getTime();
-                let fileName = `cropped-img-${timestamp}-${index}.png`;
-                await croppedCanvas.toBlob(blob => {
-                    let input = document.getElementById(`input${index}`);
-                    let imgFile = new File([blob], fileName, { type: blob.type });
-                    const fileList = new DataTransfer();
-                    fileList.items.add(imgFile);
-                    input.files = fileList.files;
+            const dataURL = reader.result;
+
+            // Update preview image
+            const previewImage = document.getElementById(`imgView${index}`);
+            if (previewImage) {
+                previewImage.src = dataURL;
+                previewImage.style.display = "block";
+            }
+
+            // Initialize Cropper.js
+            const cropperImage = document.getElementById(`cropperImg${index}`);
+            if (cropperImage) {
+                cropperImage.src = dataURL;
+            }
+
+            // Destroy existing cropper if any
+            if (croppers[index]) {
+                croppers[index].destroy();
+            }
+
+            try {
+                croppers[index] = new Cropper(cropperImage, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    guides: true,
+                    background: false,
+                    autoCropArea: 1,
+                    zoomable: true,
+                    ready: function () {
+                        // Show cropper container
+                        const cropperContainer = document.getElementById(`cropper${index}`);
+                        if (cropperContainer) {
+                            cropperContainer.style.display = "flex";
+                        }
+                    }
                 });
-                cropperContainer.style.display = 'none';
-                cropper.destroy();
-            });
+            } catch (error) {
+                console.error('Error initializing Cropper.js:', error);
+                Swal.fire('Error', 'Failed to initialize image cropper. Please try again.', 'error');
+                input.value = '';
+                previewImage.src = '';
+                previewImage.style.display = 'none';
+                return;
+            }
+
+            // Save cropped image
+            document.getElementById(`saveButton${index}`).onclick = function () {
+                if (!croppers[index]) return;
+                const croppedCanvas = croppers[index].getCroppedCanvas({ width: 440, height: 440 });
+                if (!croppedCanvas) {
+                    Swal.fire('Error', 'Failed to crop the image. Please try again.', 'error');
+                    return;
+                }
+
+                // Update preview with cropped image
+                previewImage.src = croppedCanvas.toDataURL("image/jpeg", 1.0);
+
+                // Create a new file for the cropped image
+                const timestamp = new Date().getTime();
+                const fileName = `cropped-img-${timestamp}-${index}.jpg`;
+                croppedCanvas.toBlob(blob => {
+                    const imgFile = new File([blob], fileName, { type: "image/jpeg" });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(imgFile);
+                    input.files = dataTransfer.files;
+
+                    // Hide cropper and clean up
+                    const cropperContainer = document.getElementById(`cropper${index}`);
+                    cropperContainer.style.display = "none";
+                    croppers[index].destroy();
+                    delete croppers[index];
+
+                    showToast('Image cropped and saved successfully.');
+                }, "image/jpeg", 1.0);
+            };
+
+            // Cancel cropping
+            document.getElementById(`cancelButton${index}`).onclick = function () {
+                const cropperContainer = document.getElementById(`cropper${index}`);
+                cropperContainer.style.display = "none";
+                input.value = '';
+                previewImage.src = '';
+                previewImage.style.display = 'none';
+                if (croppers[index]) {
+                    croppers[index].destroy();
+                    delete croppers[index];
+                }
+            };
         };
-        reader.readAsDataURL(input.files[0]);
+
+        reader.readAsDataURL(file);
     }
 
     function deleteSingleImage(imageId, productId) {
@@ -346,3 +516,5 @@
         });
     }
 </script>
+
+<%- include("../../views/partials/admin/footer") %>

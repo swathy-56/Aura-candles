@@ -25,10 +25,6 @@ const productSchema=new Schema({
         type:Number,
         required:true
     },
-    salePrice:{
-        type:Number,
-        required:true
-    },
     productOffer:{
         type:Number,
         default:0
@@ -37,15 +33,10 @@ const productSchema=new Schema({
         type:Number,
         default:true
     },
-    size: { // Added size as the variant field
+    size: {
         type: String,
         required: true
     },
-    // color: { // Made color optional
-    //     type: String,
-    //     required: false,
-    //     default: ''
-    // },
     productImage:{
         type:[String],
         required:true

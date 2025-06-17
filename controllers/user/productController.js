@@ -1,37 +1,39 @@
 const Product = require("../../models/productSchema");
 const Category = require("../../models/categorySchema");
 const User = require("../../models/userSchema");
-const Brand = require('../../models/brandSchema')
+const Brand = require("../../models/brandSchema");
 
 const productDetails = async (req, res) => {
   try {
+    const user = req.session.user;
+    const userData = await User.findOne({ _id: user });
 
-    const user=req.session.user;
-     const userData=await User.findOne({_id:user});
-    // const userId = req.session.user;
-    //const userData = await User.findById(userId)
-    //const userData = userId ? await User.findById(userId) : null;
     const productId = req.query.id;
     const product = await Product.findById(productId)
-      .populate("category")
-      .populate("brand");
+      .populate("category").lean()
 
-    const findCategory = product.category;
-    //const categoryOffer = findCategory ?.categoryOffer || 0
-    //const productOffer = product.productOffer || 0
-    // const totalOffer = categoryOffer + productOffer
+    const categoryOffer = product.category.categoryOffer || 0
+    const productOffer = product.productOffer || 0
+    const totalOffer = Math.max(categoryOffer, productOffer)
+
+    const updateProduct = {
+      ...product,
+      finalPrice: product.regularPrice - (product.regularPrice * totalOffer / 100)
+    }
+
+    console.log('heloooooooooooooooooooooooooooooo',updateProduct)
 
     const relatedProducts = await Product.find({
-      category: findCategory?._id,
+      category: product.category?._id,
       _id: { $ne: productId },
     }).limit(3);
 
     res.render("product-details", {
       user: userData,
-      product: product,
+      product: updateProduct,
       quantity: product.quantity,
       //totalOffer : totalOffer,
-      category: findCategory,
+      category: product.category,
       relatedProducts: relatedProducts,
     });
   } catch (error) {
@@ -40,121 +42,138 @@ const productDetails = async (req, res) => {
   }
 };
 
- 
-
-
-
 const loadshop = async (req, res) => {
   try {
-      // Initialize userData as null
-      //let userData ;
-      //console.log("hellooo");
-      const user=req.session.user;
-      //let userData = userId ? await User.findById(userId) : null;
-      let userData=await User.findOne({_id:user});
+    const user = req.session.user;
+    let userData = await User.findOne({ _id: user });
+    console.log("userId:", user);
+
+    if (req.session.user) {
+      userData = await User.findOne({ _id: user });
       
-      console.log("userId:",user)
-      
-      // Check if user is logged in and get user data if they are
-      if (req.session.user) {
-          //userData = await User.findOne({ _id: req.session.user });
-          userData=await User.findOne({_id:user});
-          console.log("user data inside:",userData)
-      }
+    }
 
-      const query = {
-          search: req.query.search || '',
-          sort: req.query.sort || '',
-          category: req.query.category || '',
-          brand: req.query.brand || '',
-          maxPrice: req.query.maxPrice || '',
-          minPrice: req.query.minPrice || ''
-      };
+    const escapeRegex = (text) => {
+      return text.replace(/[.*+?^=!:${}()|\[\]\/\\]/g, "\\$&");
+    };
 
-      // Base filter conditions
-      const filter = {
-          isBlocked: false,
-          status: "Available"
-      };
+    const query = {
+      search: req.query.search || "",
+      sort: req.query.sort || "",
+      category: req.query.category || "",
+      brand: req.query.brand || "",
+      maxPrice: req.query.maxPrice || "",
+      minPrice: req.query.minPrice || "",
+    };
 
-      // Add search filter if provided
-      if (query.search) {
-          filter.productName = { $regex: query.search, $options: 'i' };
-      }
+    // Base filter conditions
+    const filter = {
+      isBlocked: false,
+      status: "Available",
+    };
 
-      
-      if (query.category) {
-          filter.category = query.category;
-      }
+    // Add search filter if provided
+    if (query.search) {
+      const escapedSearch = escapeRegex(query.search);
+      filter.productName = { $regex: escapedSearch, $options: "i" };
+    }
 
-      // Add brand filter if provided
-      if (query.brand) {
-          filter.brand = query.brand;
-      }
+    if (query.category) {
+      filter.category = query.category;
+    }
 
-      // Add price range filter if provided
-      if (query.minPrice || query.maxPrice) {
-          filter.salePrice = {};
-          if (query.minPrice) filter.salePrice.$gte = parseInt(query.minPrice);
-          if (query.maxPrice) filter.salePrice.$lte = parseInt(query.maxPrice);
-      }
+    // Add brand filter if provided
+    if (query.brand) {
+      filter.brand = query.brand;
+    }
 
-      // Sort options
-      let sortOptions = {};
-      switch (query.sort) {
-          case 'price-asc':
-              sortOptions = { salePrice: 1 };
-              break;
-          case 'price-desc':
-              sortOptions = { salePrice: -1 };
-              break;
-          case 'name-asc':
-              sortOptions = { productName: 1 };
-              break;
-          case 'name-desc':
-              sortOptions = { productName: -1 };
-              break;
-          default:
-              sortOptions = { createdAt: -1 };
-      }
+    // Add price range filter if provided
+    if (query.minPrice || query.maxPrice) {
+      filter.regularPrice = {};
+      if (query.minPrice) filter.regularPrice.$gte = parseInt(query.minPrice);
+      if (query.maxPrice) filter.regularPrice.$lte = parseInt(query.maxPrice);
+    }
 
-      // Fetch all required data
-      const [products, categories, brands] = await Promise.all([
-          Product.find(filter)
-                 .sort(sortOptions)
-                 .collation({ locale: "en", strength: 2 })
-                 .populate('category')
-                 .populate('brand'),
-          Category.find({ isListed: true }),
-          Brand.find()
-      ]);
+    // Sort options
+    let sortOptions = {};
+    switch (query.sort) {
+      case "price-asc":
+        sortOptions = { regularPrice: 1 };
+        break;
+      case "price-desc":
+        sortOptions = { regularPrice: -1 };
+        break;
+      case "name-asc":
+        sortOptions = { productName: 1 };
+        break;
+      case "name-desc":
+        sortOptions = { productName: -1 };
+        break;
+      default:
+        sortOptions = { createdAt: -1 };
+    }
 
-      console.log('Products:', products); // Debug log
+    // Get IDs of listed categories
+    const listedCategoryIds = await Category.find({ isListed: true }).distinct(
+      "_id"
+    );
 
-      // Render the shop page with or without user data
-      res.render('shop', {
-          products,
-          categories,
-          brands,
-          query,
-          userData, 
-          isLoggedIn: !!req.session.user 
-      });
+    // Handle category filtering
+    if (
+      query.category &&
+      listedCategoryIds.map((id) => id.toString()).includes(query.category)
+    ) {
+      filter.category = query.category;
+    } else {
+      filter.category = { $in: listedCategoryIds };
+    }
 
+    if (query.brand) {
+      filter.brand = query.brand;
+    }
+
+    // Fetch all required data
+    const [products, categories, brands] = await Promise.all([
+      Product.find(filter)
+        .populate("category")
+        .sort(sortOptions)
+        .collation({ locale: "en", strength: 2 }),
+      Category.find({ isListed: true }),
+      Brand.find(),
+    ]);
+
+  const searchTerm = query.search?.toString().toLowerCase() || "";
+
+if (searchTerm) {
+  products.sort((a, b) => {
+    const aName = typeof a.productName === "string" ? a.productName.toLowerCase() : "";
+    const bName = typeof b.productName === "string" ? b.productName.toLowerCase() : "";
+
+    const aStarts = aName.startsWith(searchTerm) ? 0 : 1;
+    const bStarts = bName.startsWith(searchTerm) ? 0 : 1;
+
+    if (aStarts !== bStarts) return aStarts - bStarts;
+
+    return aName.localeCompare(bName);
+  });
+}
+
+    // Render the shop page with or without user data
+    res.render("shop", {
+      products,
+      categories,
+      brands,
+      query,
+      userData,
+      isLoggedIn: !!req.session.user,
+    });
   } catch (error) {
-      console.error('Shop page error:', error);
-    
-     res.render('login') 
-
-    
-   }
+    console.error("Shop page error:", error);
+    res.render("login");
+  }
 };
-
-
-
 
 module.exports = {
   productDetails,
-  loadshop
-
+  loadshop,
 };

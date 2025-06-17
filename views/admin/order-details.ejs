@@ -9,8 +9,21 @@
             <p><strong>Order ID:</strong> <%= order.orderId %></p>
             <p><strong>User:</strong> <%= order.userId.name %> (<%= order.userId.email %>)</p>
             <p><strong>Date:</strong> <%= order.createdOn.toLocaleDateString() %></p>
-            <p><strong>Overall Status:</strong> <span class="status-<%= order.status.toLowerCase().replace(' ', '-') %>"><%= order.status %></span></p>
+            <p><strong>Overall Status:</strong> <span class="status status-<%= order.status.toLowerCase().replace(' ', '-') %>"><%= order.status %></span></p>
         </div>
+
+        <!-- Order Status Update Form -->
+        <form id="order-status-form" class="order-status-form">
+            <div class="form-group">
+                <label for="orderStatus">Update Order Status:</label>
+                <select name="status" id="orderStatus">
+                    <% ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].forEach(s => { %>
+                        <option value="<%= s %>" <%= order.status === s ? 'selected' : '' %> <%= ['Delivered', 'Cancelled', 'Returned', 'Return Request'].includes(order.status) ? 'disabled' : '' %>><%= s %></option>
+                    <% }) %>
+                </select>
+                <button type="submit" <%= ['Delivered', 'Cancelled', 'Returned', 'Return Request'].includes(order.status) ? 'disabled' : '' %>>Update Status</button>
+            </div>
+        </form>
 
         <h3>Items</h3>
         <ul class="items-list">
@@ -20,7 +33,7 @@
                         <span class="item-name"><%= item.product.productName %></span>
                         <span>Qty: <%= item.quantity %></span>
                         <span>Price: ₹<%= item.price.toFixed(2) %></span>
-                        <span>Status: <span class="status-<%= (item.status || 'Pending').toLowerCase().replace(' ', '-') %>"><%= item.status || 'Pending' %></span></span>
+                        <span>Status: <span class="status status-<%= (item.status || 'Pending').toLowerCase().replace(' ', '-') %>"><%= item.status || 'Pending' %></span></span>
                         <% if (item.status === 'Return Request' && item.returnReason) { %>
                             <span>Return Reason: <%= item.returnReason %></span>
                         <% } %>
@@ -33,7 +46,6 @@
                         </select>
                         <button type="submit" <%= ['Delivered', 'Cancelled'].includes(item.status) ? 'disabled' : '' %>>Update</button>
                     </form>
-                    
                 </li>
             <% }) %>
         </ul>
@@ -71,104 +83,122 @@
             <button type="submit">Process Return</button>
         </form>
     <% } %>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 </main>
 
 <style>
+    :root {
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --background: #f3f4f6;
+        --card-bg: #ffffff;
+        --text: #1f2937;
+        --text-muted: #6b7280;
+    }
+
     .main-wrap {
-        margin-left: 200px;
-        padding: 25px;
-        width: calc(100% - 200px);
-        background-color: #f9fafb;
+        margin-left: 220px;
+        padding: 1.5rem;
+        width: calc(100% - 220px);
+        background-color: var(--background);
         min-height: 100vh;
+        transition: margin-left 0.3s ease;
     }
 
     .header-section {
-        margin-bottom: 20px;
+        margin-bottom: 1.5rem;
     }
 
     h1 {
-        color: #1f2937;
-        font-size: 2rem;
+        color: var(--text);
+        font-size: 1.875rem;
         font-weight: 700;
-        text-align: left;
-        margin: 0;
+        line-height: 1.2;
     }
 
     h3 {
-        color: #374151;
-        font-size: 1.4rem;
+        color: var(--text);
+        font-size: 1.25rem;
         font-weight: 600;
-        margin: 20px 0 15px;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 8px;
+        margin: 1.5rem 0 0.75rem;
+        border-bottom: 2px solid var(--primary);
+        padding-bottom: 0.5rem;
     }
 
     .order-card {
-        background: #ffffff;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        max-width: 900px;
+        background: var(--card-bg);
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        max-width: 1000px;
         margin: 0 auto;
-        transition: box-shadow 0.3s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .item-status-form select:disabled,
-   .item-status-form button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
 
     .order-card:hover {
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
     }
 
     .order-info p {
-        font-size: 1rem;
-        color: #4b5563;
-        margin: 8px 0;
-        line-height: 1.6;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        margin: 0.5rem 0;
+        line-height: 1.5;
     }
 
     .order-info p strong {
-        color: #1f2937;
+        color: var(--text);
         font-weight: 600;
-        margin-right: 5px;
+        margin-right: 0.5rem;
+    }
+
+    .status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: capitalize;
     }
 
     .status-pending {
-        color: #d97706;
-        font-weight: 500;
+        background: #fef3c7;
+        color: var(--warning);
     }
 
     .status-processing {
-        color: #2563eb;
-        font-weight: 500;
+        background: #dbeafe;
+        color: var(--primary);
     }
 
     .status-shipped {
-        color: #059669;
-        font-weight: 500;
+        background: #d1fae5;
+        color: var(--success);
     }
 
     .status-delivered {
-        color: #16a34a;
-        font-weight: 500;
+        background: #dcfce7;
+        color: var(--success);
     }
 
     .status-cancelled {
-        color: #dc2626;
-        font-weight: 500;
+        background: #fee2e2;
+        color: var(--danger);
     }
 
     .status-return-request {
+        background: #ffedd5;
         color: #ea580c;
-        font-weight: 500;
     }
 
     .status-returned {
-        color: #b91c1c;
-        font-weight: 500;
+        background: #fee2e2;
+        color: var(--danger);
     }
 
     .items-list {
@@ -181,96 +211,110 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #f9fafb;
-        padding: 15px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        transition: background-color 0.3s ease, transform 0.2s ease;
+        background: #f8fafc;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s ease, transform 0.2s ease;
     }
 
     .item:hover {
         background: #f1f5f9;
-        transform: translateY(-2px);
+        transform: translateY(-1px);
     }
 
     .item-details {
         display: flex;
         flex-wrap: wrap;
-        gap: 15px;
-        font-size: 0.95rem;
-        color: #4b5563;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
     }
 
     .item-details .item-name {
         font-weight: 600;
-        color: #1f2937;
+        color: var(--text);
     }
 
-    .item-status-form {
+    .item-status-form,
+    .order-status-form {
         display: flex;
-        gap: 10px;
+        gap: 0.5rem;
         align-items: center;
     }
 
-    .item-status-form select {
-        padding: 8px 12px;
+    .item-status-form select,
+    .order-status-form select {
+        padding: 0.5rem;
         border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 0.9rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
         background: #fff;
         cursor: pointer;
-        transition: border-color 0.3s ease;
-        min-width: 140px;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        min-width: 120px;
     }
 
-    .item-status-form select:focus {
-        border-color: #3b82f6;
+    .item-status-form select:focus,
+    .order-status-form select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         outline: none;
-        box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
     }
 
-    .item-status-form button {
-        padding: 8px 16px;
-        background: #3b82f6;
+    .item-status-form button,
+    .order-status-form button {
+        padding: 0.5rem 1rem;
+        background: var(--primary);
         color: #fff;
         border: none;
-        border-radius: 6px;
-        font-size: 0.9rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
         cursor: pointer;
-        transition: background-color 0.3s ease, transform 0.1s ease;
+        transition: background-color 0.2s ease, transform 0.1s ease;
     }
 
-    .item-status-form button:hover {
-        background: #2563eb;
+    .item-status-form button:hover,
+    .order-status-form button:hover {
+        background: var(--primary-dark);
         transform: translateY(-1px);
     }
 
+    .item-status-form select:disabled,
+    .item-status-form button:disabled,
+    .order-status-form select:disabled,
+    .order-status-form button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     .order-total {
-        margin-top: 20px;
+        margin-top: 1.5rem;
         text-align: right;
     }
 
     .order-total p {
-        font-size: 1.2rem;
+        font-size: 1.125rem;
         font-weight: 600;
-        color: #16a34a;
+        color: var(--success);
         background: #f0fdf4;
-        padding: 10px 15px;
-        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
         display: inline-block;
     }
 
     .returns-link {
         display: inline-block;
-        margin-top: 20px;
-        padding: 10px 20px;
+        margin-top: 1rem;
+        padding: 0.5rem 1.5rem;
         background: #7c3aed;
         color: #fff;
         text-decoration: none;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        font-weight: 600;
-        transition: background-color 0.3s ease, transform 0.1s ease;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: background-color 0.2s ease, transform 0.1s ease;
     }
 
     .returns-link:hover {
@@ -279,75 +323,109 @@
     }
 
     .return-form {
-        max-width: 900px;
-        margin: 30px auto;
-        padding: 20px;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        max-width: 1000px;
+        margin: 1.5rem auto;
+        padding: 1.5rem;
+        background: var(--card-bg);
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         display: flex;
         flex-wrap: wrap;
-        gap: 15px;
-        justify-content: space-between;
+        gap: 1rem;
     }
 
     .form-group {
         flex: 1;
-        min-width: 200px;
+        min-width: 180px;
     }
 
     .form-group label {
         display: block;
-        font-size: 0.9rem;
-        color: #374151;
-        margin-bottom: 5px;
+        font-size: 0.875rem;
+        color: var(--text);
+        margin-bottom: 0.25rem;
         font-weight: 500;
     }
 
     .return-form select,
     .return-form textarea {
         width: 100%;
-        padding: 10px 15px;
+        padding: 0.5rem;
         border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        transition: border-color 0.3s ease;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .return-form select:focus,
     .return-form textarea:focus {
-        border-color: #3b82f6;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         outline: none;
-        box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
     }
 
     .return-form textarea {
-        min-height: 100px;
+        min-height: 80px;
         resize: vertical;
     }
 
     .return-form button {
-        padding: 10px 25px;
-        background: #3b82f6;
+        padding: 0.5rem 1.5rem;
+        background: var(--primary);
         color: #fff;
         border: none;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        font-weight: 600;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
         cursor: pointer;
-        transition: background-color 0.3s ease, transform 0.1s ease;
+        transition: background-color 0.2s ease, transform 0.1s ease;
         align-self: flex-end;
     }
 
     .return-form button:hover {
-        background: #2563eb;
+        background: var(--primary-dark);
         transform: translateY(-1px);
+    }
+
+    /* Toast Styling */
+    .toast-container {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1050;
+    }
+
+    .toast {
+        background: #fef2f2;
+        border: 1px solid #fee2e2;
+        color: var(--danger);
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.375rem;
+        max-width: 320px;
+        opacity: 0;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .toast .toast-close {
+        cursor: pointer;
+        float: right;
+        font-weight: bold;
+        margin-left: 0.5rem;
+        color: var(--danger);
     }
 
     @media (max-width: 768px) {
         .main-wrap {
-            margin-left: 150px;
-            width: calc(100% - 150px);
+            margin-left: 160px;
+            width: calc(100% - 160px);
+            padding: 1rem;
         }
 
         .return-form {
@@ -359,49 +437,117 @@
         .main-wrap {
             margin-left: 0;
             width: 100%;
+            padding: 0.75rem;
+        }
+
+        .order-card,
+        .return-form {
+            margin: 0.5rem;
         }
 
         .item {
             flex-direction: column;
             align-items: flex-start;
-            gap: 10px;
+            gap: 0.5rem;
         }
 
         .item-details {
             flex-direction: column;
-            gap: 5px;
+            gap: 0.25rem;
         }
 
-        .item-status-form {
+        .item-status-form,
+        .order-status-form {
             width: 100%;
             flex-direction: column;
             align-items: stretch;
+            gap: 0.5rem;
         }
 
         .item-status-form select,
-        .item-status-form button {
+        .item-status-form button,
+        .order-status-form select,
+        .order-status-form button {
             width: 100%;
         }
     }
 </style>
 
 <script>
+    // Function to show toast notification
+    function showToast(message) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+            ${message}
+            <span class="toast-close">×</span>
+        `;
+        toastContainer.appendChild(toast);
+
+        // Show toast
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+
+        // Auto-hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+
+        // Allow manual close
+        toast.querySelector('.toast-close').addEventListener('click', () => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        });
+    }
+
+    // Order Status Update
+    const orderStatusForm = document.getElementById('order-status-form');
+    if (orderStatusForm) {
+        orderStatusForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const status = e.target.querySelector('select[name="status"]').value;
+            console.log('Updating order status:', { orderId: '<%= order._id %>', status });
+            const response = await fetch('/admin/update-status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: '<%= order._id %>', status })
+            });
+            const result = await response.json();
+            console.log('Order status update response:', result);
+            if (result.success) {
+                showToast(result.message);
+                location.reload();
+            } else {
+                showToast(result.message);
+            }
+        });
+    }
+
     // Item Status Update
     document.querySelectorAll('.item-status-form').forEach(form => {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const productId = form.dataset.productId;
             const status = form.querySelector('select[name="status"]').value;
+            console.log('Updating item status:', { orderId: '<%= order._id %>', productId, status });
             const response = await fetch('/admin/update-item-status', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ orderId: '<%= order._id %>', productId, status })
             });
             const result = await response.json();
+            console.log('Item status update response:', result);
             if (result.success) {
                 location.reload();
             } else {
-                alert(result.message);
+                showToast(result.message);
             }
         });
     });
@@ -414,16 +560,18 @@
             const productId = e.target.productId.value;
             const action = e.target.action.value;
             const adminNote = e.target.adminNote.value;
+            console.log('Processing return:', { orderId: '<%= order._id %>', productId, action, adminNote });
             const response = await fetch('/admin/process-return', {
-                method: 'PATCH',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ orderId: '<%= order._id %>', productId, action, adminNote })
             });
             const result = await response.json();
+            console.log('Return process response:', result);
             if (result.success) {
                 location.reload();
             } else {
-                alert(result.message);
+                showToast(result.message);
             }
         });
     }

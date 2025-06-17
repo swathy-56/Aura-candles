@@ -43,6 +43,8 @@
             background: white;
             border-radius: 15px;
             padding: 20px;
+
+
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border-left: 5px solid #3498db;
@@ -131,6 +133,39 @@
             background: #c0392b;
         }
 
+        /* Toast Styling */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        .toast {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            max-width: 300px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .toast.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .toast .toast-close {
+            cursor: pointer;
+            float: right;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .returns-container {
@@ -141,7 +176,7 @@
                 font-size: 2rem;
             }
 
-            .button-group {
+            .brasution-group {
                 flex-direction: column;
             }
 
@@ -177,6 +212,8 @@
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
     <h1>Return Requests</h1>
     <a href="/admin/orderlist" class="back-link">Back to Orders</a>
     <div class="returns-container">
@@ -205,6 +242,38 @@
     </div>
 
     <script>
+        function showToast(message, isSuccess = false) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${isSuccess ? 'success' : ''}`;
+            toast.innerHTML = `
+                ${message}
+                <span class="toast-close">×</span>
+            `;
+            toastContainer.appendChild(toast);
+
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+
+            // Auto-hide toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+
+            // Allow manual close
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            });
+        }
+
         async function processReturn(orderId, action, productId) {
             try {
                 const response = await fetch('/admin/process-return', {
@@ -214,12 +283,15 @@
                 });
                 const result = await response.json();
                 if (result.success) {
-                    location.reload();
+                    showToast(result.message || 'Return processed successfully', true);
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
                 } else {
-                    alert(result.message);
+                    showToast(result.message || 'Failed to process return');
                 }
             } catch (error) {
-                alert('An error occurred while processing the return');
+                showToast('An error occurred while processing the return');
             }
         }
     </script>

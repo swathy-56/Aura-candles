@@ -39,11 +39,11 @@ const addressSchema=new Schema({
     },
     altPhone:{
             type:String,
-            required:true
+        //     required:true
     },
     isShippingAddress:{
             type:Boolean,
-            default:false//only one address should have this set to true.
+            default:false
     }
     
 })

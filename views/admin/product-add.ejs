@@ -52,12 +52,6 @@
                                         placeholder="₹" />
                                     <div id="regularPrice-error" class="error-message"></div>
                                 </div>
-                                <div class="col-6 form-group">
-                                    <label class="form-label">Sale Price</label>
-                                    <input name="salePrice" type="number" step="0.01" class="form-control"
-                                        placeholder="₹" />
-                                    <div id="salePrice-error" class="error-message"></div>
-                                </div>
                             </div>
 
                             <div class="form-group">
@@ -94,11 +88,15 @@
                                 <div class="image-upload">
                                     <img src="" alt="Preview" id="imgView<%= i %>" class="image-preview" />
                                     <input type="file" name="images" id="input<%= i %>" class="form-control image-input"
-                                        accept="image/png, image/jpeg, image/jpg" onchange="viewImage(event,  <%= i %> )" />
+                                        accept="image/png,image/jpeg,image/jpg" onchange="viewImage(event, <%= i %>)" />
                                     <div class="image-cropper" id="cropper<%= i %>" style="display: none;">
-                                        <img src="" id="croppedImg<%= i %>" alt="Cropped" />
-                                        <button type="button" id="saveButton<%= i %>"
-                                            class="btn btn-sm btn-primary">Save</button>
+                                        <div class="cropper-wrapper">
+                                            <img src="" id="cropperImg<%= i %>" alt="Cropper" class="cropper-image" />
+                                        </div>
+                                        <div class="cropper-controls">
+                                            <button type="button" id="saveButton<%= i %>" class="btn btn-sm btn-primary">Save Crop</button>
+                                            <button type="button" id="cancelButton<%= i %>" class="btn btn-sm btn-secondary">Cancel</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <% } %>
@@ -121,50 +119,84 @@
     <script>
         let croppers = {};
 
+        // Validate image file type
+        function validateImageType(file) {
+            const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            return file && validImageTypes.includes(file.type);
+        }
+
         function viewImage(event, index) {
             const input = event.target;
             const file = input.files[0];
             if (!file) return;
 
+            // Validate file type
+            if (!validateImageType(file)) {
+                Swal.fire('Error', 'Please select a valid image file (jpg, png, jpeg)', 'error');
+                input.value = ''; // Clear the invalid file
+                document.getElementById(`imgView${index}`).src = ''; // Clear preview
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function () {
                 const dataURL = reader.result;
 
-                // Ensure the preview image updates
-                const image = document.getElementById(`imgView${index}`);
-                if (image) {
-                    image.src = dataURL;
-                    image.style.display = "block"; // Ensure it's visible
+                // Update preview image
+                const previewImage = document.getElementById(`imgView${index}`);
+                if (previewImage) {
+                    previewImage.src = dataURL;
+                    previewImage.style.display = "block";
                 }
 
-                // Ensure cropper resets if already initialized
+                // Initialize Cropper.js
+                const cropperImage = document.getElementById(`cropperImg${index}`);
+                if (cropperImage) {
+                    cropperImage.src = dataURL;
+                }
+
+                // Destroy existing cropper if any
                 if (croppers[index]) {
                     croppers[index].destroy();
                 }
 
-                croppers[index] = new Cropper(image, {
-                    aspectRatio: 1,
-                    viewMode: 1,
-                    guides: true,
-                    background: false,
-                    autoCropArea: 1,
-                    zoomable: true
-                });
-
-                console.log('hereeeeeeeeeeeeeeeeeeee')
-                // Show cropper container
-                const cropperContainer = document.getElementById(`cropper${index}`);
-                if (cropperContainer) {
-                    console.log('inside cropper container/////////')
-                    cropperContainer.style.display = "flex";
+                try {
+                    croppers[index] = new Cropper(cropperImage, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        guides: true,
+                        background: false,
+                        autoCropArea: 1,
+                        zoomable: true,
+                        ready: function () {
+                            // Show cropper container
+                            const cropperContainer = document.getElementById(`cropper${index}`);
+                            if (cropperContainer) {
+                                cropperContainer.style.display = "flex";
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error initializing Cropper.js:', error);
+                    Swal.fire('Error', 'Failed to initialize image cropper. Please try again.', 'error');
+                    input.value = '';
+                    previewImage.src = '';
+                    return;
                 }
 
                 // Save cropped image
                 document.getElementById(`saveButton${index}`).onclick = function () {
+                    if (!croppers[index]) return;
                     const croppedCanvas = croppers[index].getCroppedCanvas({ width: 440, height: 440 });
-                    const croppedImage = document.getElementById(`croppedImg${index}`);
-                    croppedImage.src = croppedCanvas.toDataURL("image/jpeg", 1.0);
+                    if (!croppedCanvas) {
+                        Swal.fire('Error', 'Failed to crop the image. Please try again.', 'error');
+                        return;
+                    }
 
+                    // Update preview with cropped image
+                    previewImage.src = croppedCanvas.toDataURL("image/jpeg", 1.0);
+
+                    // Create a new file for the cropped image
                     const timestamp = new Date().getTime();
                     const fileName = `cropped-img-${timestamp}-${index}.jpg`;
                     croppedCanvas.toBlob(blob => {
@@ -172,10 +204,25 @@
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(imgFile);
                         input.files = dataTransfer.files;
-                    });
 
+                        // Hide cropper and clean up
+                        const cropperContainer = document.getElementById(`cropper${index}`);
+                        cropperContainer.style.display = "none";
+                        croppers[index].destroy();
+                        delete croppers[index];
+                    }, "image/jpeg", 1.0);
+                };
+
+                // Cancel cropping
+                document.getElementById(`cancelButton${index}`).onclick = function () {
+                    const cropperContainer = document.getElementById(`cropper${index}`);
                     cropperContainer.style.display = "none";
-                    croppers[index].destroy();
+                    input.value = '';
+                    previewImage.src = '';
+                    if (croppers[index]) {
+                        croppers[index].destroy();
+                        delete croppers[index];
+                    }
                 };
             };
 
@@ -189,11 +236,10 @@
                 description: document.getElementById('descriptionid').value.trim(),
                 brand: document.getElementById('brand').value,
                 regularPrice: document.getElementsByName('regularPrice')[0].value,
-                salePrice: document.getElementsByName('salePrice')[0].value,
                 quantity: document.getElementsByName('quantity')[0].value,
                 size: document.getElementsByName('size')[0].value.trim(),
                 category: document.getElementById('category').value,
-                images: Array.from(document.querySelectorAll('.image-input')).map(input => input.files.length)
+                images: Array.from(document.querySelectorAll('.image-input')).map(input => input.files[0])
             };
 
             let isValid = true;
@@ -218,13 +264,6 @@
                 displayErrorMessage('regularPrice-error', 'Please enter a valid regular price');
                 isValid = false;
             }
-            if (!fields.salePrice || isNaN(fields.salePrice) || parseFloat(fields.salePrice) < 0) {
-                displayErrorMessage('salePrice-error', 'Please enter a valid sale price');
-                isValid = false;
-            } else if (parseFloat(fields.regularPrice) <= parseFloat(fields.salePrice)) {
-                displayErrorMessage('salePrice-error', 'Sale price must be less than regular price');
-                isValid = false;
-            }
             if (!fields.quantity || isNaN(fields.quantity) || parseInt(fields.quantity) < 0) {
                 displayErrorMessage('quantity-error', 'Please enter a valid quantity');
                 isValid = false;
@@ -233,9 +272,16 @@
                 displayErrorMessage('size-error', 'Please enter a size');
                 isValid = false;
             }
-            if (!fields.images.some(count => count > 0)) {
+            if (!fields.images.some(file => file)) {
                 displayErrorMessage('images-error', 'Please upload at least one image');
                 isValid = false;
+            } else {
+                fields.images.forEach((file, index) => {
+                    if (file && !validateImageType(file)) {
+                        displayErrorMessage('images-error', `Image ${index + 1} must be a valid image file (jpg, png, jpeg)`);
+                        isValid = false;
+                    }
+                });
             }
 
             return isValid;
@@ -375,19 +421,30 @@
         }
 
         .image-cropper {
-            display: flex;
+            display: none;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
             gap: 1rem;
             margin-top: 0.5rem;
+            background: #fff;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        #croppedImg1,
-        #croppedImg2,
-        #croppedImg3,
-        #croppedImg4 {
-            max-width: 150px;
-            border-radius: 8px;
+        .cropper-wrapper {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .cropper-image {
+            max-width: 100%;
+            display: block;
+        }
+
+        .cropper-controls {
+            display: flex;
+            gap: 0.5rem;
         }
 
         .error-message {
@@ -429,3 +486,10 @@
             background: #9ac3cc;
             transform: translateY(-2px);
         }
+
+        @media (max-width: 576px) {
+            .cropper-wrapper {
+                max-width: 100%;
+            }
+        }
+    </style>

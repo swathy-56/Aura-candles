@@ -44,7 +44,7 @@
                                 <button class="btn btn-primary" type="submit">Generate Report</button>
                             </div>
                             <div class="d-grid mt-2">
-                                <button class="btn btn-success" type="button" onclick="downloadReport('pdf')">Download PDF</button>
+                                <button class="btn btn-success" type="button" onclick="downloadPDF()">Download PDF</button>
                             </div>
                             <div class="d-grid mt-2">
                                 <button class="btn btn-success" type="button" onclick="downloadReport('excel')">Download Excel</button>
@@ -116,7 +116,7 @@
                 endDate: $('#endDate').val()
             };
 
-            console.log('---------',formData)
+            console.log('---------', formData);
 
             fetch('/admin/generate-sales-report', {
                 method: 'POST',
@@ -145,6 +145,40 @@
                 format: format
             };
 
+            fetch('/admin/download-excel-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.message || 'Download failed'); });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `sales-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            })
+            .catch(error => {
+                Swal.fire('Error', error.message, 'error');
+            });
+        }
+
+        function downloadPDF() {
+            const formData = {
+                reportType: $('#reportType').val(),
+                startDate: $('#startDate').val(),
+                endDate: $('#endDate').val(),
+                format: 'pdf'
+            };
+
             fetch('/admin/download-sales-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -160,8 +194,7 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                // Ensure the correct file extension
-                a.download = `sales-report-${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'pdf'}`;
+                a.download = `sales-report-${new Date().toISOString().split('T')[0]}.pdf`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);

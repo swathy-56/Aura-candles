@@ -1,27 +1,56 @@
 <%- include("../../views/partials/admin/header") %>
-<div class="container">
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container py-4">
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="categoryToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body"></div>
+        </div>
+    </div>
+
     <div class="row justify-content-center">
-        <div class="col-md-6 mt-60">
+        <div class="col-md-6">
             <form id="editCategoryForm">
-                <div class="d-grid text-end mt-30 col-md-5">
-                    <button class="btn btn-primary" type="submit">Update category</button>
-                </div>
-                <div class="mb-4 mt-30">
-                    <label for="product_name" class="form-label">Name</label>
+                <div class="mb-3">
+                    <label for="categoryName" class="form-label">Name</label>
                     <input type="text" name="categoryName" id="categoryName" value="<%=category.name%>" class="form-control border" required />
                 </div>
                 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label class="form-label">Description</label>
-                    <textarea name="description" id="description" class="form-control border" required><%=category.description%></textarea>
+                    <textarea name="description" id="description" class="form-control border" rows="4" required><%=category.description%></textarea>
+                </div>
+
+                <div class="d-grid text-end">
+                    <button class="btn btn-primary" type="submit">Update category</button>
                 </div>
             </form>
-            
         </div>
     </div>
 </div>
+
 <script>
-    
+    // Function to show toast notification
+    function showToast(message, isError = false) {
+        const toastElement = document.getElementById('categoryToast');
+        const toastBody = toastElement.querySelector('.toast-body');
+        const toastHeader = toastElement.querySelector('.toast-header');
+        
+        toastBody.textContent = message;
+        toastHeader.className = `toast-header Pepperoni text-white'}`;
+        
+        const toast = new bootstrap.Toast(toastElement, {
+            delay: 3000 // Auto-hide after 3 seconds
+        });
+        toast.show();
+    }
+
     document.getElementById('editCategoryForm').addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -29,8 +58,21 @@
         const categoryName = document.getElementById('categoryName').value.trim();
         const description = document.getElementById('description').value.trim();
 
+        // Client-side validation
         if (!categoryName || !description) {
-            alert('Please fill in all fields.');
+            showToast('Please fill in all fields.', true);
+            return;
+        }
+        if (categoryName.length < 3) {
+            showToast('Category name must be at least 3 characters long.', true);
+            return;
+        }
+        if (description.length < 10) {
+            showToast('Description must be at least 10 characters long.', true);
+            return;
+        }
+        if (categoryName.length > 50) {
+            showToast('Category name cannot exceed 50 characters.', true);
             return;
         }
 
@@ -46,20 +88,22 @@
                 })
             });
 
+            const data = await response.json();
+
             if (response.ok) {
-                const data = await response.json();
-                alert('Category updated successfully!');
-                window.location.href = '/admin/category';
+                showToast(data.message || 'Category updated successfully!');
+                setTimeout(() => window.location.href = '/admin/category', 1000); // Redirect after toast
             } else {
-                const errorData = await response.json();
-                alert(errorData.message || 'Error updating category');
+                showToast(data.error || 'Error updating category.', true);
             }
         } catch (error) {
-            console.error('Error updating category:', error);
-            alert('An error occurred while updating the category.');
+            console.error('Client-side error updating category:', error);
+            showToast('Failed to connect to the server. Please try again later.', true);
         }
     });
 </script>
 
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <%- include("../../views/partials/admin/footer") %>
