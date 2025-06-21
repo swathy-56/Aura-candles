@@ -212,7 +212,7 @@ const updateProfile = async (req, res) => {
                 return res.status(HttpStatus.BAD_REQUEST).json({ success: false, message: Messages.INVALID_IMAGE });
             }
 
-            user.profileImage = `/Uploads/re-image/${req.file.filename}`;
+            user.profileImage = `/uploads/re-image/${req.file.filename}`;
             console.log("Updated profile image path:", user.profileImage);
         }
 
@@ -222,7 +222,7 @@ const updateProfile = async (req, res) => {
         if (phone) user.phone = phone; 
 
         if (req.file) {
-            user.profileImage = `/Uploads/re-image/${req.file.filename}`;
+            user.profileImage = `/uploads/re-image/${req.file.filename}`;
             console.log("Updated profile image path:", user.profileImage);
         }
 
