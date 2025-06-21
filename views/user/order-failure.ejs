@@ -226,12 +226,13 @@
             <%= reason || "Unknown error occurred" %>
           </p>
           <div class="action-buttons">
-            <button
-              class="failure-btn retry-btn"
-              onclick="window.location.href='/checkout'"
-            >
-              Retry Payment
-            </button>
+            <form action="/create-razorpay-retry-payment" method="POST">
+              <input type="hidden" name="orderId" value="<%= orderId %>" />
+              <input type="hidden" name="amount" value="<%= amount %>" />
+              <button type="submit" class="failure-btn retry-btn">
+                Retry Payment
+              </button>
+            </form>
             <a href="/orders" class="failure-btn details-btn"
               >View Order Details</a
             >
@@ -241,5 +242,54 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  document.querySelector('form').addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent default form submission
+    const form = e.target;
+    const data = {
+      orderId: form.querySelector('[name="orderId"]').value,
+      amount: form.querySelector('[name="amount"]').value,
+    };
+
+    try {
+      const response = await fetch('/create-razorpay-retry-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (result.success) {
+        const options = {
+          key: '<%= process.env.RAZORPAY_KEY_ID %>', // Replace with your Razorpay key
+          amount: data.amount * 100, // Convert to paise
+          currency: 'INR',
+          order_id: result.orderId,
+          handler: function (response) {
+            // On successful payment, update order status
+            fetch('/order-payment-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: data.orderId,
+                paymentStatus: 'Success',
+                paymentId: response.razorpay_payment_id,
+              }),
+            }).then(() => {
+              window.location.href = `/order-placed?orderId=${data.orderId}`;
+            });
+          },
+          theme: { color: '#007bff' },
+        };
+        const rzp = new Razorpay(options);
+        rzp.open();
+      } else {
+        alert(result.message || 'Failed to retry payment');
+      }
+    } catch (error) {
+      alert('Error retrying payment');
+    }
+  });
+</script>
   </body>
 </html>

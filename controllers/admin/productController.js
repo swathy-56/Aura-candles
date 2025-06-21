@@ -92,18 +92,19 @@ const getAllProducts = async (req, res) => {
         { brand: { $regex: new RegExp(".*" + search + ".*", "i") } },
       ],
     })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt:-1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate("category")
       .exec();
-
+    
     const count = await Product.find({
       $or: [
         { productName: { $regex: new RegExp(".*" + search + ".*", "i") } },
         { brand: { $regex: new RegExp(".*" + search + ".*", "i") } },
       ],
     }).countDocuments();
+    
 
     const category = await Category.find({ isListed: true });
     const brand = await Brand.find({ isBlocked: false });
@@ -333,3 +334,4 @@ module.exports = {
   editProduct,
   deleteSingleImage,
 };
+

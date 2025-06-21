@@ -736,155 +736,7 @@ const viewOrder = async (req, res) => {
   }
 };
 
-// const cancelOrder = async (req, res) => {
-//   try {
-//     const { orderId, productId, fullOrder, cancelReason } = req.body;
-//     const userId = req.session.user?._id;
 
-//     if (!mongoose.Types.ObjectId.isValid(orderId)) {
-//       return res
-//         .status(HttpStatus.BAD_REQUEST)
-//         .json({ message: Messages.INVALID_ORDERID });
-//     }
-
-//     const order = await Order.findById(orderId).populate(
-//       "orderedItems.product"
-//     );
-//     if (!order) {
-//       return res
-//         .status(HttpStatus.NOT_FOUND)
-//         .json({ message: Messages.ORDER_NOT_FOUND });
-//     }
-
-//     if (order.status === "Failed") {
-//       return res
-//         .status(HttpStatus.BAD_REQUEST)
-//         .json({ message: Messages.FAILED_ORDERS });
-//     }
-
-//     let refundAmount = 0;
-
-//     if (fullOrder) {
-//       if (
-//         order.status.toLowerCase() === "delivered" ||
-//         order.status.toLowerCase() === "cancelled"
-//       ) {
-//         return res
-//           .status(HttpStatus.BAD_REQUEST)
-//           .json({ message: Messages.ORDER_CANNOT_BE_CANCELLED });
-//       }
-
-//       for (const item of order.orderedItems) {
-//         item.status = "Cancelled";
-//         await Product.findByIdAndUpdate(item.product._id, {
-//           $inc: { quantity: item.quantity },
-//         });
-//       }
-
-//       order.status = "Cancelled";
-//       refundAmount = order.finalAmount;
-//     } else {
-//       if (!mongoose.Types.ObjectId.isValid(productId)) {
-//         return res
-//           .status(HttpStatus.BAD_REQUEST)
-//           .json({ message: Messages.INVALID_PRODUCTID });
-//       }
-
-//       const item = order.orderedItems.find(
-//         (item) => item.product._id.toString() === productId
-//       );
-//       if (!item) {
-//         return res
-//           .status(HttpStatus.NOT_FOUND)
-//           .json({ message: Messages.PRODUCT_NOT_FOUND });
-//       }
-
-//       if (
-//         item.status &&
-//         (item.status.toLowerCase() === "delivered" ||
-//           item.status.toLowerCase() === "cancelled")
-//       ) {
-//         return res
-//           .status(HttpStatus.BAD_REQUEST)
-//           .json({ message: Messages.ITEM_CANNOT_BE_CANCELLED });
-//       }
-
-//       item.status = "Cancelled";
-//       await Product.findByIdAndUpdate(item.product._id, {
-//         $inc: { quantity: item.quantity },
-//       });
-
-//       // Calculate the item's contribution to the final amount
-//       const itemTotal = item.price * item.quantity;
-//       const totalPrice = order.orderedItems.reduce(
-//         (sum, item) => sum + item.price * item.quantity,
-//         0
-//       );
-//       // Proportion the final amount based on the item's share of the total price
-//       refundAmount = itemTotal;
-
-//       const remainingItems = order.orderedItems.filter(
-//         (item) => item.status !== "Cancelled"
-//       );
-//       if (remainingItems.length === 0) {
-//         order.status = "Cancelled";
-//         // order.totalPrice = 0;
-//         // order.finalAmount = 0;
-//         // order.discount = 0;
-//       } else {
-//         order.totalPrice = remainingItems.reduce(
-//           (sum, item) => sum + item.price * item.quantity,
-//           0
-//         );
-//         // Recalculate finalAmount proportionally
-//         const len = order.orderedItems.length;
-//         const discountForOne = order.coupon.code
-//           ? order.coupon.discountAmount / len
-//           : 0;
-//         refundAmount = (item.price - discountForOne) * item.quantity;
-//         order.finalAmount -= refundAmount;
-
-//         const remainingTotal = order.orderedItems.reduce((sum, item) => {
-//           if (item.product._id !== productId) {
-//             sum += item.product.regularPrice * item.quantity;
-//           }
-//           return sum;
-//         }, 0);
-
-//         order.totalPrice = remainingTotal;
-//         // order.discount = order.totalPrice - order.finalAmount;
-//       }
-//     }
-
-//     await order.save();
-
-//     if (refundAmount > 0) {
-//       await User.findByIdAndUpdate(userId, {
-//         $inc: { wallet: refundAmount },
-//         $push: {
-//           walletTransactions: {
-//             type: "credit",
-//             amount: refundAmount,
-//             description: `Refund for cancelled item in order #${order.orderId}`,
-//             orderId: order._id,
-//           },
-//         },
-//       });
-//     }
-
-//     return res.json({
-//       success: true,
-//       message: `Item cancelled successfully. ₹${refundAmount.toFixed(
-//         2
-//       )} refunded to wallet.`,
-//     });
-//   } catch (error) {
-//     console.error("Error cancelling order:", error);
-//     res
-//       .status(HttpStatus.SERVER_ERROR)
-//       .json({ message: Messages.SERVER_ERROR });
-//   }
-// };
 
 const cancelOrder = async (req, res) => {
   try {
@@ -1082,7 +934,22 @@ const getOrderFailurePage = async (req, res) => {
       return res.status(HttpStatus.BAD_REQUEST).send(Messages.INVALID_CARTID);
     }
 
-    res.render("order-failure", { cartId, reason, orderId });
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(HttpStatus.BAD_REQUEST).send(Messages.INVALID_ORDERID);
+    }
+
+    // Fetch the order to get the finalAmount
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(HttpStatus.NOT_FOUND).send(Messages.ORDER_NOT_FOUND);
+    }
+
+    res.render("order-failure", {
+      cartId,
+      reason,
+      orderId,
+      amount: order.finalAmount, // Send finalAmount as amount
+    });
   } catch (error) {
     console.error("Error rendering order-failure page:", error);
     res.status(HttpStatus.SERVER_ERROR).send(Messages.SERVER_ERROR);

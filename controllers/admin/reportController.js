@@ -138,9 +138,9 @@ const generateSalesReport = async (req, res) => {
   }
 };
 
+
 const downloadSalesReport = async (req, res) => {
   try {
-    console.log('hiiiiiiiiiiiiiiiiiiiiiiiiiiiiii');
     const { format } = req.body;
     const report = req.session.salesReport;
 
@@ -175,6 +175,7 @@ const downloadSalesReport = async (req, res) => {
       order.totalPrice = Number.isFinite(order.totalPrice) ? order.totalPrice : 0;
       order.discount = Number.isFinite(order.discount) ? order.discount : 0;
       order.finalAmount = Number.isFinite(order.finalAmount) ? order.finalAmount : 0;
+      order.paymentMethod = order.paymentMethod || 'N/A';
       order.coupon = order.coupon || { code: 'None' };
       return order;
     });
@@ -208,19 +209,15 @@ const downloadSalesReport = async (req, res) => {
       }
     });
 
-    // Use Times-Roman font to support INR symbol
-    doc.font("Times-Roman");
+    // Use Helvetica font to support INR symbol
+    doc.font("Helvetica");
 
     // Header Section
     doc
       .fontSize(22)
-      .font("Times-Bold")
-      .fillColor("#2E2E2E")
       .text("Sales Report", { align: "center" });
     doc
       .fontSize(12)
-      .font("Times-Roman")
-      .fillColor("#555555")
       .text(
         `Aura Candles | Generated on: ${new Date().toLocaleDateString()}`,
         { align: "center" }
@@ -231,16 +228,17 @@ const downloadSalesReport = async (req, res) => {
 
     // Table Setup
     const tableTop = doc.y;
-    const colWidths = [110, 100, 90, 90, 90]; // Total 480, no Coupon column
-    const tableWidth = colWidths.reduce((sum, width) => sum + width, 0); // 480
+    const colWidths = [90, 80, 80, 70, 70, 100]; // Total 498
+    const tableWidth = colWidths.reduce((sum, width) => sum + width, 0); // 498
     const tableLeft = 30; // Consistent left edge
-    const tableRight = tableLeft + tableWidth; // 510
+    const tableRight = tableLeft + tableWidth; // 528
     const headers = [
       "Order ID",
       "Date",
       "Total Amount",
       "Discount",
       "Final Amount",
+      "Payment Method",
     ];
 
     // Table Header
@@ -253,7 +251,6 @@ const downloadSalesReport = async (req, res) => {
     headers.forEach((header, i) => {
       doc
         .fontSize(11)
-        .font("Times-Bold")
         .text(header, xPos, tableTop + 5, {
           width: colWidths[i],
           align: "center",
@@ -263,15 +260,16 @@ const downloadSalesReport = async (req, res) => {
 
     // Table Rows
     let yPos = tableTop + 30;
-    doc.font("Times-Roman").fontSize(10).fillColor("#000000");
+    doc.fontSize(10).fillColor("#000000");
     report.orders.forEach((order, index) => {
       xPos = tableLeft; // Align with table left edge
       const row = [
         order.orderId,
         order.createdOn.toLocaleDateString(),
-        `₹ ${order.totalPrice.toFixed(2)}`,
-        `₹ ${order.discount.toFixed(2)}`,
-        `₹ ${order.finalAmount.toFixed(2)}`,
+        `Rs.${order.totalPrice.toFixed(2)}`,
+        `Rs.${order.discount.toFixed(2)}`,
+        `Rs.${order.finalAmount.toFixed(2)}`,
+        order.paymentMethod,
       ];
 
       if (index % 2 === 0) {
@@ -280,11 +278,10 @@ const downloadSalesReport = async (req, res) => {
       doc.fillColor("#000000");
 
       row.forEach((cell, i) => {
-        const align = (i === 2 || i === 3 || i === 4) ? "right" : "center";
-        // Add padding to shift right-aligned columns slightly to the left
-        const paddingLeft = (i === 2 || i === 3 || i === 4) ? 10 : 0; // 10 units padding for Total Amount, Discount, Final Amount
+        const align = (i === 2 || i === 3 || i === 4) ? "center" : "center";
+        const paddingLeft = 0;
         doc.text(cell, xPos + paddingLeft, yPos, {
-          width: colWidths[i] - paddingLeft, // Adjust width to account for padding
+          width: colWidths[i] - paddingLeft,
           align,
         });
         xPos += colWidths[i];
@@ -304,7 +301,6 @@ const downloadSalesReport = async (req, res) => {
         headers.forEach((header, i) => {
           doc
             .fontSize(11)
-            .font("Times-Bold")
             .text(header, xPos, yPos + 5, {
               width: colWidths[i],
               align: "center",
@@ -312,7 +308,7 @@ const downloadSalesReport = async (req, res) => {
           xPos += colWidths[i];
         });
         yPos += 30;
-        doc.font("Times-Roman").fontSize(10).fillColor("#000000");
+        doc.fontSize(10).fillColor("#000000");
       }
     });
 
@@ -322,19 +318,17 @@ const downloadSalesReport = async (req, res) => {
     yPos += 10;
     doc
       .fontSize(12)
-      .font("Times-Bold")
-      .fillColor("#333333")
       .text("Summary", tableLeft, yPos);
-    doc.font("Times-Roman").fontSize(11);
+    doc.fontSize(11);
     const totals = [
       `Total Orders: ${report.totalOrders}`,
-      `Total Sales: ₹ ${report.totalSales.toFixed(2)}`,
-      `Total Discount: ₹ ${report.totalDiscount.toFixed(2)}`,
-      `Final Amount: ₹ ${report.totalFinalAmount.toFixed(2)}`,
+      `Total Sales: Rs. ${report.totalSales.toFixed(2)}`,
+      `Total Discount: Rs.${report.totalDiscount.toFixed(2)}`,
+      `Final Amount: Rs.${report.totalFinalAmount.toFixed(2)}`,
     ];
     totals.forEach((text, i) => {
       doc.text(text, tableRight - 200 - (i % 2) * 150, yPos + Math.floor(i / 2) * 20, {
-        align: "right",
+        align: "center",
         width: 200,
       });
     });
@@ -347,8 +341,6 @@ const downloadSalesReport = async (req, res) => {
       .stroke("#E0E0E0");
     doc
       .fontSize(9)
-      .font("Times-Italic")
-      .fillColor("#666666")
       .text("Aura Candles - Sales Report", tableLeft, footerY, { align: "center", width: tableWidth });
 
     // Finalize PDF
@@ -366,6 +358,7 @@ const downloadSalesReport = async (req, res) => {
     }
   }
 };
+
 
 const downloadExcelReport = async (req, res) => {
   try {
@@ -392,6 +385,7 @@ const downloadExcelReport = async (req, res) => {
       } else {
         order.createdOn = createdOn;
       }
+      order.paymentMethod = order.paymentMethod || 'N/A';
       return order;
     });
 
@@ -401,7 +395,7 @@ const downloadExcelReport = async (req, res) => {
     const worksheet = workbook.addWorksheet("Sales Report");
 
     // Header
-    worksheet.mergeCells("A1:F1");
+    worksheet.mergeCells("A1:G1");
     worksheet.getCell("A1").value = "Sales Report - Aura Candles";
     worksheet.getCell("A1").font = { name: "Helvetica", size: 16, bold: true };
     worksheet.getCell("A1").alignment = {
@@ -414,7 +408,7 @@ const downloadExcelReport = async (req, res) => {
       fgColor: { argb: "FFE0E0E0" },
     };
 
-    worksheet.mergeCells("A2:F2");
+    worksheet.mergeCells("A2:G2");
     worksheet.getCell(
       "A2"
     ).value = `Generated on: ${new Date().toLocaleDateString()}`;
@@ -431,6 +425,7 @@ const downloadExcelReport = async (req, res) => {
       "Total Amount",
       "Discount",
       "Final Amount",
+      "Payment Method",
     ];
     worksheet.getRow(4).values = headers;
     worksheet.getRow(4).font = { name: "Helvetica", size: 11, bold: true };
@@ -451,6 +446,7 @@ const downloadExcelReport = async (req, res) => {
       { width: 15 },
       { width: 15 },
       { width: 15 },
+      { width: 20 },
     ];
 
     // Data Rows
@@ -458,15 +454,17 @@ const downloadExcelReport = async (req, res) => {
       const row = worksheet.addRow([
         order.orderId || "N/A",
         order.createdOn.toLocaleDateString(),
-        `₹${order.totalPrice.toFixed(2)}`,
-        `₹${order.discount.toFixed(2)}`,
-        `₹${order.finalAmount.toFixed(2)}`,
+        `Rs.${order.totalPrice.toFixed(2)}`,
+        `Rs.${order.discount.toFixed(2)}`,
+        `Rs.${order.finalAmount.toFixed(2)}`,
+        order.paymentMethod,
       ]);
       row.font = { name: "Helvetica", size: 10 };
       row.alignment = { vertical: "middle" };
       row.getCell(3).alignment = { horizontal: "right" };
       row.getCell(4).alignment = { horizontal: "right" };
-      row.getCell(6).alignment = { horizontal: "right" };
+      row.getCell(5).alignment = { horizontal: "right" };
+      row.getCell(6).alignment = { horizontal: "center" };
       if (index % 2 === 0) {
         row.fill = {
           type: "pattern",
@@ -485,20 +483,20 @@ const downloadExcelReport = async (req, res) => {
     };
     const totals = [
       ["Total Orders", report.totalOrders],
-      ["Total Sales", `₹${report.totalSales.toFixed(2)}`],
-      ["Total Discount", `₹${report.totalDiscount.toFixed(2)}`],
-      ["Final Amount", `₹${report.totalFinalAmount.toFixed(2)}`],
+      ["Total Sales", `Rs.${report.totalSales.toFixed(2)}`],
+      ["Total Discount", `Rs.${report.totalDiscount.toFixed(2)}`],
+      ["Final Amount", `Rs.${report.totalFinalAmount.toFixed(2)}`],
     ];
     totals.forEach(([label, value], i) => {
-      const row = worksheet.addRow([label, "", "", "", "", value]);
+      const row = worksheet.addRow([label, "", "", "", "", "", value]);
       row.font = { name: "Helvetica", size: 11 };
       row.getCell(1).font = { name: "Helvetica", size: 11, bold: true };
-      row.getCell(6).alignment = { horizontal: "right" };
+      row.getCell(7).alignment = { horizontal: "right" };
     });
 
     // Footer
     const footerRow = worksheet.addRow(["Aura Candles - Sales Report"]);
-    worksheet.mergeCells(`A${footerRow.number}:F${footerRow.number}`);
+    worksheet.mergeCells(`A${footerRow.number}:G${footerRow.number}`);
     footerRow.font = {
       name: "Helvetica",
       size: 9,
