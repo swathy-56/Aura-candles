@@ -462,44 +462,6 @@ const resendEmailOtp = async (req, res) => {
     }
 };
 
-// const changePassword = async (req, res) => {
-//     try {
-//         const userId = req.session.user;
-//         const { currentPassword, newPassword, confirmPassword } = req.body;
-
-//         if (!userId) {
-//             return res.redirect('/login');
-//         }
-
-//         if (!currentPassword || !newPassword || !confirmPassword) {
-//             return res.redirect('/editProfile?message=All fields are required');
-//         }
-
-//         if (newPassword !== confirmPassword) {
-//             return res.redirect('/editProfile?message=New passwords do not match');
-//         }
-
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             return res.redirect('/login');
-//         }
-
-//         const isMatch = await bcrypt.compare(currentPassword, user.password);
-//         if (!isMatch) {
-//             return res.redirect('/editProfile?message=Incorrect current password');
-//         }
-
-//         const hashedPassword = await bcrypt.hash(newPassword, 10);
-//         user.password = hashedPassword;
-//         await user.save();
-
-//         return res.redirect('/editProfile?message=Password updated successfully');
-//     } catch (error) {
-//         console.error("Error changing password:", error);
-//         return res.redirect('/editProfile?message=Internal Server Error');
-//     }
-//};
-
 
 // Get Address Management Page
 const getAddresses = async (req, res) => {

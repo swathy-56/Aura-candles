@@ -23,6 +23,78 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// const getCheckoutPage = async (req, res) => {
+//   try {
+//     const userId = req.session.user._id;
+//     const userData = req.session.user;
+
+//     let cart = await Cart.findOne({ userId })
+//       .populate("items.productId")
+//       .populate("items.productId.category");
+
+//     if (!cart || cart.items.length === 0) {
+//       return res.render("cart", { message: Messages.CART_EMPTY });
+//     }
+
+//     const blockedItems = cart.items.filter((item) => {
+//       return item.productId.isBlocked === true;
+//     });
+
+//     if (blockedItems.length > 0) {
+//       return res.render("cart", {
+//         cart,
+//         message:
+//           "Some items in your cart are no longer available or belong to unavailable categories. Please remove them to proceed.",
+//         userData: userData,
+//       });
+//     }
+
+//     const addresses = await Address.find({ userId });
+
+//     const subtotal = cart.items.reduce(
+//       (sum, item) => sum + item.price * item.quantity,
+//       0
+//     );
+
+//     const pendingOrder = await Order.findOne({
+//       userId,
+//       status: "Pending",
+//       "coupon.applied": true,
+//     });
+
+//     const totalPrice = pendingOrder?.finalAmount || subtotal;
+//     const discount = pendingOrder?.coupon?.discountAmount || 0;
+//     const couponCode = pendingOrder?.coupon?.code || "";
+
+//     const coupons = await Coupon.find({
+//       isActive: true,
+//       expiryDate: { $gte: new Date() },
+//     });
+
+//     const user = await User.findById(userId).select("wallet");
+//     const walletBalance = user.wallet || 0;
+
+//     res.render("checkout", {
+//       cart: cart.items,
+//       addresses: addresses,
+//       total: totalPrice,
+//       cartId: cart._id,
+//       userId: userId,
+//       userData: userData,
+//       couponApplied: pendingOrder?.coupon?.applied || false,
+//       discount: pendingOrder?.coupon?.discountAmount || 0,
+//       couponCode: couponCode,
+//       coupons: coupons,
+//       walletBalance: walletBalance,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching checkout page:", error);
+//     res
+//       .status(HttpStatus.SERVER_ERROR)
+//       .json({ message: Messages.SERVER_ERROR });
+//   }
+// };
+
 const getCheckoutPage = async (req, res) => {
   try {
     const userId = req.session.user._id;
@@ -49,6 +121,8 @@ const getCheckoutPage = async (req, res) => {
       });
     }
 
+    // Fetch user to get default shipping address
+    const user = await User.findById(userId).select("wallet shippingAddress");
     const addresses = await Address.find({ userId });
 
     const subtotal = cart.items.reduce(
@@ -71,7 +145,6 @@ const getCheckoutPage = async (req, res) => {
       expiryDate: { $gte: new Date() },
     });
 
-    const user = await User.findById(userId).select("wallet");
     const walletBalance = user.wallet || 0;
 
     res.render("checkout", {
@@ -86,6 +159,7 @@ const getCheckoutPage = async (req, res) => {
       couponCode: couponCode,
       coupons: coupons,
       walletBalance: walletBalance,
+      defaultAddress: user.shippingAddress, // Add default address
     });
   } catch (error) {
     console.error("Error fetching checkout page:", error);
