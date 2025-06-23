@@ -1,7 +1,5 @@
-<%- include("../../views/partials/user/header") %>
+    <%- include("../../views/partials/user/header") %>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
   .btn {
@@ -18,15 +16,16 @@
       text-align: center;
   }
 
+
   .btn:hover {
       background-color: #ff4c4c;
       transform: translateY(-2px);
   }
 
+
   .btn:active {
       transform: translateY(1px);
   }
-
   .wishlist-btn {
       position: absolute;
       top: 10px;
@@ -40,19 +39,23 @@
       transition: background-color 0.3s, color 0.3s, transform 0.3s;
   }
 
+
   .wishlist-btn:hover {
       background-color: rgba(255, 255, 255, 1);
       color: #ff4c4c;
       transform: translateY(-2px);
   }
 
+
   .wishlist-btn:active {
       transform: translateY(1px);
   }
 
+
   .product-img-action-wrap {
       position: relative;
   }
+
 
   .product-img {
       position: relative;
@@ -60,11 +63,13 @@
       overflow: hidden;
   }
 
+
   .product-cart-wrap {
       border: 1px solid #eee;
       padding: 20px;
       margin-bottom: 30px;
   }
+
 
   .product-content-wrap h6 {
       font-size: 18px;
@@ -72,11 +77,13 @@
       margin-bottom: 5px;
   }
 
+
   .product-content-wrap h5 {
       font-size: 16px;
       color: #ff6b6b;
       margin-bottom: 10px;
   }
+
 
   .product-content-wrap a {
       display: inline-block;
@@ -89,29 +96,11 @@
       text-decoration: none;
   }
 
+
   .product-content-wrap a:hover {
       background-color: #ff4c4c;
   }
-
-  .product-content-wrap button {
-      display: inline-block;
-      padding: 8px 12px;
-      background-color: #ff6b6b;
-      color: white;
-      text-transform: uppercase;
-      font-size: 14px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background-color 0.3s;
-  }
-
-  .product-content-wrap button:hover {
-      background-color: #ff4c4c;
-  }
 </style>
-
 <section class="hero">
   <div class="hero__slider owl-carousel">
       <div class="hero__items set-bg" data-setbg="uploads/re-image/banner2.jpeg">
@@ -128,7 +117,7 @@
               </div>
           </div>
       </div>
-      <div class="hero__items set-bg" data-setbg="Uploads/re-image/banner1.jpeg">
+      <div class="hero__items set-bg" data-setbg="uploads/re-image/banner1.jpeg">
           <div class="container">
               <div class="row">
                   <div class="col-xl-5 col-lg-7 col-md-8">
@@ -144,14 +133,13 @@
       </div>
   </div>
 </section>
-
 <section class="banner spad">
   <div class="container">
       <div class="row">
           <div class="col-lg-7 offset-lg-4">
               <div class="banner__item">
                   <div class="banner__item__pic">
-                      <img src="Uploads/product-images/golden2.jpg" alt="Festive Decor">
+                      <img src="uploads/product-images/golden2.jpg" alt="Festive Decor ">
                   </div>
                   <div class="banner__item__text">
                       <h2>Festive Decor</h2>
@@ -162,7 +150,7 @@
           <div class="col-lg-5">
               <div class="banner__item banner__item--middle">
                   <div class="banner__item__pic">
-                      <img src="Uploads/product-images/golden3.jpg" alt="Party and Unwinding">
+                      <img src="uploads/product-images/golden3.jpg" alt="Party and Unwinding">
                   </div>
                   <div class="banner__item__text">
                       <h2>Party and Unwinding</h2>
@@ -173,7 +161,7 @@
           <div class="col-lg-7">
               <div class="banner__item banner__item--last">
                   <div class="banner__item__pic">
-                      <img src="Uploads/product-images/golden4.jpg" alt="Candle Spring 2030">
+                      <img src="uploads/product-images/golden4.jpg" alt="Candle Spring 2030">
                   </div>
                   <div class="banner__item__text">
                       <h2>Scented Candle</h2>
@@ -184,7 +172,6 @@
       </div>
   </div>
 </section>
-
 <section class="product spad">
   <div class="container">
       <div class="row">
@@ -195,76 +182,53 @@
           </div>
       </div>
       <div class="row product__filter">
-        <% for(let i=0; i<products.length; i++) { %>
+        <%for(let i=0;i<products.length;i++){%>
               <div class="col-lg-3 col-md-4 col-12 col-sm-6">
                   <div class="product-cart-wrap mb-30">
                       <div class="product-img-action-wrap">
                           <div class="product-img product-img-zoom">
-                              <a href="/productDetails?id=<%= products[i]._id %>">
-                                  <img class="default-img" src="/Uploads/re-image/<%= products[i].productImage[0] %>" alt="<%= products[i].productName %>">
+
+                              <a href="/productDetails?id=<%=products[i]._id%>">
+                                  <img class="default-img" src="/uploads/re-image/<%=products[i].productImage[0]%>" alt="<%=products[i].productName%>">
                               </a>
-                          </div>
-                          <div class="product-action-1">
-                              <a aria-label="Add to Wishlist" class="action-btn hover-up wishlist-btn" href="/addToWishlist?id=<%= products[i]._id %>">
-                                  <i class="far fa-heart"></i>
-                              </a>
-                          </div>
+                            </div>
                       </div>
+                      <div class="product-action-1">
+                        
+
+                            <a aria-label="Add to Wishlist" class="action-btn hover-up" href="/addToWishlist?id=<%=products[i]._id%>">
+                            </a>
+                          
+                    </div>
+                     
+
+
                       <div class="product-content-wrap">
-                          <h6><%= products[i].productName %></h6>
-                          <h5><%= products[i].regularPrice %></h5>
-                          <button class="add-cart" data-id="<%= products[i]._id %>" data-quantity="1" data-price="<%= products[i].regularPrice %>">Add to Cart</button>
+                          <h6><%=products[i].productName%></h6>
+                          <h5><%=products[i].regularPrice%></h5>
+                          <a href="/addToCart?id=<%=products[i]._id%>">Add  to Cart</a>
                       </div>
                   </div>
               </div>
-        <% } %>
+              <%}%>
       </div>
   </div>
 </section>
-
-<script>
-  $(document).ready(function () {
-      $('.add-cart').on('click', function (event) {
-          event.preventDefault();
-          const productId = $(this).attr('data-id');
-          const quantity = $(this).attr('data-quantity');
-
-          $.ajax({
-              url: '/addToCart',
-              method: 'POST',
-              data: JSON.stringify({ productId, quantity }),
-              contentType: 'application/json',
-              success: function (response) {
-                  Swal.fire({
-                      icon: 'success',
-                      title: 'Added to Cart',
-                      text: response.message,
-                      confirmButtonText: 'OK',
-                  }).then(() => {
-                      Swal.fire({
-                          title: 'Go to cart?',
-                          text: 'Do you want to go to cart?',
-                          showCancelButton: true,
-                          confirmButtonText: 'YES',
-                          cancelButtonText: 'NO',
-                      }).then((confirmation) => {
-                          if (confirmation.isConfirmed) {
-                              window.location.href = '/cart';
-                          }
-                      });
-                  });
-              },
-              error: function () {
-                  Swal.fire({
-                      icon: 'error',
-                      title: 'Error',
-                      text: 'Failed to add to cart!',
-                      confirmButtonText: 'OK',
-                  });
-              }
-          });
-      });
-  });
-</script>
-
 <%- include("../../views/partials/user/footer") %>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
