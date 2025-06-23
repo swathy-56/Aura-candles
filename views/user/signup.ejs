@@ -251,6 +251,9 @@
         } else if (!namepattern.test(nameval)) {
           error1.style.display = "block";
           error1.innerHTML = "Name can only contain alphabets and spaces";
+        } else if (nameval.length > 20) {
+          error1.style.display = "block";
+          error1.innerHTML = "Name must not exceed 20 characters";
         } else {
           error1.style.display = "none";
           error1.innerHTML = "";
@@ -281,9 +284,8 @@
           error3.style.display = "block";
           error3.innerHTML = "Phone must be 10 digits and not start with 0";
         } else if (/^[6-9]0{9}$/.test(phoneval)) {
-       
-          error3.style.display = 'block';
-          error3.innerHTML = 'This phone number looks invalid';
+          error3.style.display = "block";
+          error3.innerHTML = "This phone number looks invalid";
         } else {
           error3.style.display = "none";
           error3.innerHTML = "";
