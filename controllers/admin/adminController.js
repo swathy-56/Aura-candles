@@ -440,18 +440,22 @@ const downloadReport = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
-    req.session.destroy((err) => {
+    if (req.session.admin) {
+      delete req.session.admin;
+    }
+    req.session.save((err) => {
       if (err) {
-        console.log("Error destroying session", err);
+        console.log("Error saving session after admin logout", err);
         return res.redirect("/admin/pageerror");
       }
       res.redirect("/admin/login");
     });
   } catch (error) {
-    console.log(("unexpected error during logout", error));
+    console.log("Unexpected error during admin logout", error);
     res.redirect("/admin/pageerror");
   }
 };
+
 
 module.exports = {
   loadLogin,
