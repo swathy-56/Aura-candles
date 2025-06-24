@@ -32,7 +32,6 @@ const productDetails = async (req, res) => {
       user: userData,
       product: updateProduct,
       quantity: product.quantity,
-      //totalOffer : totalOffer,
       category: product.category,
       relatedProducts: relatedProducts,
     });
@@ -50,7 +49,6 @@ const loadshop = async (req, res) => {
 
     if (req.session.user) {
       userData = await User.findOne({ _id: user });
-      
     }
 
     const escapeRegex = (text) => {
@@ -78,13 +76,22 @@ const loadshop = async (req, res) => {
       filter.productName = { $regex: escapedSearch, $options: "i" };
     }
 
+    // Add category filter if provided
     if (query.category) {
       filter.category = query.category;
     }
 
-    // Add brand filter if provided
+    // Add brand filter if provided and ensure the brand is not blocked
     if (query.brand) {
-      filter.brand = query.brand;
+      // Verify that the brand is not blocked
+      const brand = await Brand.findOne({ _id: query.brand, isBlocked: false });
+      console.log("BRANDD:", brand);
+      if (brand) {
+        filter.brand = brand.brandName; // Use brandName for filtering since Product.brand is a String
+      } else {
+        // If the brand is blocked or doesn't exist, return no products
+        filter.brand = null;
+      }
     }
 
     // Add price range filter if provided
@@ -93,6 +100,9 @@ const loadshop = async (req, res) => {
       if (query.minPrice) filter.regularPrice.$gte = parseInt(query.minPrice);
       if (query.maxPrice) filter.regularPrice.$lte = parseInt(query.maxPrice);
     }
+
+    // Log the final filter object for debugging
+    console.log("Final filter:", JSON.stringify(filter, null, 2));
 
     // Sort options
     let sortOptions = {};
@@ -128,35 +138,39 @@ const loadshop = async (req, res) => {
       filter.category = { $in: listedCategoryIds };
     }
 
-    if (query.brand) {
-      filter.brand = query.brand;
-    }
-
     // Fetch all required data
     const [products, categories, brands] = await Promise.all([
       Product.find(filter)
-        .populate("category")
+        .populate("category") // Only populate category, as brand is a String
         .sort(sortOptions)
         .collation({ locale: "en", strength: 2 }),
       Category.find({ isListed: true }),
-      Brand.find(),
+      Brand.find({ isBlocked: false }), // Only fetch non-blocked brands for the sidebar
     ]);
 
-  const searchTerm = query.search?.toString().toLowerCase() || "";
+    // Log the number of products found
+    console.log("Products found:", products.length);
+    console.log("Products:", products.map(p => ({
+      _id: p._id,
+      productName: p.productName,
+      brand: p.brand
+    })));
 
-if (searchTerm) {
-  products.sort((a, b) => {
-    const aName = typeof a.productName === "string" ? a.productName.toLowerCase() : "";
-    const bName = typeof b.productName === "string" ? b.productName.toLowerCase() : "";
+    const searchTerm = query.search?.toString().toLowerCase() || "";
 
-    const aStarts = aName.startsWith(searchTerm) ? 0 : 1;
-    const bStarts = bName.startsWith(searchTerm) ? 0 : 1;
+    if (searchTerm) {
+      products.sort((a, b) => {
+        const aName = typeof a.productName === "string" ? a.productName.toLowerCase() : "";
+        const bName = typeof b.productName === "string" ? b.productName.toLowerCase() : "";
 
-    if (aStarts !== bStarts) return aStarts - bStarts;
+        const aStarts = aName.startsWith(searchTerm) ? 0 : 1;
+        const bStarts = bName.startsWith(searchTerm) ? 0 : 1;
 
-    return aName.localeCompare(bName);
-  });
-}
+        if (aStarts !== bStarts) return aStarts - bStarts;
+
+        return aName.localeCompare(bName);
+      });
+    }
 
     // Render the shop page with or without user data
     res.render("shop", {

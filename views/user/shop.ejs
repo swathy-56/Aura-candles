@@ -35,7 +35,7 @@
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.3s ease;
-    flex: 0 1 350px;
+    flex: 0 1 400px; /* Increased flex basis to accommodate both buttons */
   }
 
   .search-form:focus-within {
@@ -63,6 +63,20 @@
 
   .search-button:hover {
     background: #dc3545;
+  }
+
+  .clear-search-button {
+    padding: 12px 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    white-space: nowrap; /* Prevent text wrapping */
+  }
+
+  .clear-search-button:hover {
+    background: #c82333; /* Slightly darker red for hover effect */
   }
 
   .sort-dropdown {
@@ -381,6 +395,7 @@
         <input type="text" name="search" value="<%= query.search %>" placeholder="Search products..."
           class="search-input">
         <button type="submit" class="search-button">Search</button>
+        <button type="button" class="clear-search-button" onclick="clearSearch()">Clear</button>
       </form>
       <form action="" method="GET" id="sortForm">
         <% if(query.category) { %>
@@ -603,6 +618,13 @@
           currentUrl.searchParams.set('search', currentUrl.searchParams.get('search'));
       }
       window.location.href = currentUrl.toString();
+  }
+
+  function clearSearch() {
+      const form = document.getElementById('searchForm');
+      const searchInput = form.querySelector('.search-input');
+      searchInput.value = '';
+      form.submit();
   }
 </script>
 

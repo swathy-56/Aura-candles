@@ -1,7 +1,8 @@
 const Order = require("../../models/orderSchema");
 const User = require("../../models/userSchema");
 const Product = require("../../models/productSchema");
-const { HttpStatus } = require("../../shared/constants");
+const { HttpStatus, Messages } = require("../../shared/constants");
+const { Types } = require("mongoose");
 
 const orderList = async (req, res) => {
   try {
@@ -455,15 +456,85 @@ const updateOrderStatus = async (req, res) => {
 
 const getReturnRequests = async (req, res) => {
   try {
-    const orders = await Order.find({ "orderedItems.status": "Return Request" })
-      .populate("userId", "name email")
-      .populate("orderedItems.product", "productName regularPrice");
+    const orders = await Order.aggregate([
+      // Match orders with at least one item in "Return Request" status
+      { $match: { "orderedItems.status": "Return Request" } },
+      // Filter orderedItems to include only those with "Return Request" status
+      {
+        $project: {
+          userId: 1,
+          orderId: 1,
+          totalPrice: 1,
+          discount: 1,
+          finalAmount: 1,
+          coupon: 1,
+          orderedItems: {
+            $filter: {
+              input: "$orderedItems",
+              as: "item",
+              cond: { $eq: ["$$item.status", "Return Request"] },
+            },
+          },
+        },
+      },
+      // Populate userId and product details
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userId",
+        },
+      },
+      { $unwind: "$userId" },
+      {
+        $lookup: {
+          from: "products",
+          localField: "orderedItems.product",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+      // Restructure orderedItems to include populated product details
+      {
+        $addFields: {
+          orderedItems: {
+            $map: {
+              input: "$orderedItems",
+              as: "item",
+              in: {
+                $mergeObjects: [
+                  "$$item",
+                  {
+                    product: {
+                      $arrayElemAt: [
+                        "$productDetails",
+                        {
+                          $indexOfArray: [
+                            "$productDetails._id",
+                            "$$item.product",
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      // Remove temporary productDetails field
+      { $project: { productDetails: 0 } },
+    ]);
+
     res.render("return", { returns: orders });
   } catch (error) {
     console.error("Error fetching returns:", error.message, error.stack);
     res.redirect("/admin/pageerror");
   }
 };
+
 
 const processReturn = async (req, res) => {
   try {
@@ -475,6 +546,16 @@ const processReturn = async (req, res) => {
       adminNote,
     });
 
+    if (
+      !Types.ObjectId.isValid(orderId) ||
+      !Types.ObjectId.isValid(productId)
+    ) {
+      console.log("Invalid orderId or productId:", orderId, productId);
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ success: false, message: Messages.INVALID_PRODUCTID });
+    }
+
     const order = await Order.findById(orderId)
       .populate("userId")
       .populate("orderedItems.product");
@@ -482,7 +563,7 @@ const processReturn = async (req, res) => {
       console.log("Order not found for ID:", orderId);
       return res
         .status(HttpStatus.NOT_FOUND)
-        .json({ success: false, message: "Order not found" });
+        .json({ success: false, message: Messages.ORDER_NOT_FOUND });
     }
 
     const item = order.orderedItems.find(
@@ -492,7 +573,7 @@ const processReturn = async (req, res) => {
       console.log("Item not found in order:", productId);
       return res
         .status(HttpStatus.NOT_FOUND)
-        .json({ success: false, message: "Product not found in order" });
+        .json({ success: false, message: Messages.PRODUCT_NOT_FOUND });
     }
 
     if (item.status !== "Return Request") {
@@ -501,93 +582,35 @@ const processReturn = async (req, res) => {
         .status(HttpStatus.BAD_REQUEST)
         .json({
           success: false,
-          message: "Invalid return request for this item",
+          message: "Item is not in return request status",
         });
     }
 
-    if (action === "approve") {
-      item.status = "Returned";
+    let refundAmount = 0;
 
-      // Calculate refund amount based on proportion of finalAmount
+    if (action === "approve") {
+      // Calculate refund amount
       const itemTotal = item.price * item.quantity;
-      const totalPrice = order.orderedItems.reduce(
+      const totalPriceBeforeDiscount = order.orderedItems.reduce(
         (sum, i) => sum + i.price * i.quantity,
         0
       );
-      const refundAmount =
-        totalPrice > 0 ? (itemTotal / totalPrice) * order.finalAmount : itemTotal;
-      console.log("Item return approved, refundAmount:", refundAmount);
+      const effectiveDiscount = order.coupon.applied
+        ? order.coupon.discountAmount
+        : 0;
+      const itemDiscount =
+        totalPriceBeforeDiscount > 0
+          ? (itemTotal / totalPriceBeforeDiscount) * effectiveDiscount
+          : 0;
+      refundAmount = itemTotal - itemDiscount;
+
+      // Update item status
+      item.status = "Returned";
 
       // Restock product
       await Product.findByIdAndUpdate(item.product._id, {
         $inc: { quantity: item.quantity },
       });
-
-      // Update order totals
-      const remainingItems = order.orderedItems.filter(
-        (i) => i.status !== "Returned" && i.status !== "Cancelled"
-      );
-      if (remainingItems.length === 0) {
-        order.status = "Returned";
-        // order.totalPrice = 0;
-        // order.finalAmount = 0;
-        // order.discount = 0;
-      } else {
-        order.totalPrice = remainingItems.reduce(
-          (sum, i) => sum + i.price * i.quantity,
-          0
-        );
-        order.finalAmount =
-          order.totalPrice > 0
-            ? (order.totalPrice / totalPrice) * order.finalAmount
-            : order.totalPrice;
-        order.discount = order.totalPrice - order.finalAmount;
-      }
-
-      // Update order status
-      const allItemsReturned = order.orderedItems.every(
-        (i) => i.status === "Returned"
-      );
-      const anyItemReturnRequested = order.orderedItems.some(
-        (i) => i.status === "Return Request"
-      );
-      if (allItemsReturned) {
-        order.status = "Returned";
-      } else if (anyItemReturnRequested) {
-        order.status = "Return Request";
-      } else {
-        const activeStatuses = order.orderedItems
-          .filter(
-            (i) =>
-              !["Cancelled", "Return Request", "Returned"].includes(i.status)
-          )
-          .map((i) => i.status);
-        const statusPriority = [
-          "Pending",
-          "Processing",
-          "Shipped",
-          "Delivered",
-        ];
-        order.status =
-          activeStatuses.length > 0
-            ? statusPriority[
-                Math.min(
-                  ...activeStatuses.map((s) => statusPriority.indexOf(s))
-                )
-              ]
-            : "Delivered";
-      }
-
-      order.adminNote = adminNote || "Approved via returns page";
-      await order.save();
-      console.log("Order updated:", order._id, "Status:", order.status);
-
-      if (!order.userId?._id) {
-        console.log("User ID missing or invalid:", order.userId);
-        return res
-          .status(HttpStatus.SERVER_ERROR)
-          .json({ success: false, message: "User ID missing from order" });
-      }
 
       // Credit refund to user's wallet
       if (refundAmount > 0) {
@@ -607,68 +630,63 @@ const processReturn = async (req, res) => {
           },
           { new: true, runValidators: true }
         );
-        console.log(
-          "User update result:",
-          userUpdate?.wallet,
-          userUpdate?.walletTransactions
-        );
-
         if (!userUpdate) {
           console.log("User update failed, no document returned");
           return res
             .status(HttpStatus.SERVER_ERROR)
             .json({ success: false, message: "Failed to update user wallet" });
         }
+        console.log(
+          "User wallet updated:",
+          userUpdate.wallet,
+          userUpdate.walletTransactions
+        );
       }
-
-      res.json({
-        success: true,
-        message: `Return approved, ₹${refundAmount.toFixed(2)} refunded to wallet`,
-      });
     } else if (action === "reject") {
       item.status = "Delivered";
-      order.adminNote = adminNote || "Rejected via returns page";
-
-      const anyItemReturnRequested = order.orderedItems.some(
-        (i) => i.status === "Return Request"
-      );
-      if (!anyItemReturnRequested) {
-        const activeStatuses = order.orderedItems
-          .filter(
-            (i) =>
-              !["Cancelled", "Return Request", "Returned"].includes(i.status)
-          )
-          .map((i) => i.status);
-        const statusPriority = [
-          "Pending",
-          "Processing",
-          "Shipped",
-          "Delivered",
-        ];
-        order.status =
-          activeStatuses.length > 0
-            ? statusPriority[
-                Math.min(
-                  ...activeStatuses.map((s) => statusPriority.indexOf(s))
-                )
-              ]
-            : "Delivered";
-      }
-
-      await order.save();
-      console.log("Order rejected:", order._id);
-      res.json({ success: true, message: "Return rejected" });
     } else {
       console.log("Invalid action:", action);
       return res
         .status(HttpStatus.BAD_REQUEST)
-        .json({ success: false, message: "Invalid action" });
+        .json({ success: false, message: "Invalid action. Use 'approve' or 'reject'" });
     }
+
+    // Update order status
+    const allItemsReturned = order.orderedItems.every(
+      (i) => i.status.toLowerCase() === "returned"
+    );
+    const allItemsReturnRequested = order.orderedItems.every(
+      (i) =>
+        i.status.toLowerCase() === "return request" ||
+        i.status.toLowerCase() === "returned"
+    );
+    if (allItemsReturned) {
+      order.status = "Returned";
+    } else if (allItemsReturnRequested) {
+      order.status = "Return Request";
+    } else {
+      order.status = "Delivered";
+    }
+
+    // // Add admin note if provided
+    // if (adminNote) {
+    //   order.adminNote = adminNote;
+    // }
+
+    await order.save();
+    console.log("Order updated:", order._id, "Status:", order.status);
+
+    return res.json({
+      success: true,
+      message: action === "approve"
+        ? `Return approved, ₹${refundAmount.toFixed(2)} refunded to wallet`
+        : "Return rejected",
+    });
   } catch (error) {
     console.error("Error processing return:", error.message, error.stack);
-    res
+    return res
       .status(HttpStatus.SERVER_ERROR)
-      .json({ success: false, message: "Server error" });
+      .json({ success: false, message: Messages.SERVER_ERROR });
   }
 };
 
