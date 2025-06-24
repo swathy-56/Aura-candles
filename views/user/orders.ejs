@@ -330,9 +330,8 @@
                 <td><%= new Date(order.createdOn).toLocaleDateString() %></td>
                 <td><%= order.userId.name || 'N/A' %></td>
                 <td>
-                  ₹<%= order.finalAmount ? order.finalAmount.toFixed(2) : '0'
-                  %>
-                </td>
+  ₹<%= (order.originalAmount || order.finalAmount || 0).toFixed(2) %>
+</td>
                 <td>
                   <% if (order.orderedItems && order.orderedItems.length > 0) {
                   %> <% order.orderedItems.forEach(item => { %>

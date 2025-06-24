@@ -624,6 +624,7 @@ const createOrder = async (req, res) => {
       },
       totalPrice: totalPrice,
       finalAmount: finalAmount,
+      originalAmount: finalAmount,
       discount: actualDiscount,
       coupon: couponCode
         ? {
@@ -812,6 +813,160 @@ const viewOrder = async (req, res) => {
 
 
 
+// const cancelOrder = async (req, res) => {
+//   try {
+//     const { orderId, productId, fullOrder, cancelReason } = req.body;
+//     const userId = req.session.user?._id;
+
+//     if (!mongoose.Types.ObjectId.isValid(orderId)) {
+//       return res
+//         .status(HttpStatus.BAD_REQUEST)
+//         .json({ message: Messages.INVALID_ORDERID });
+//     }
+
+//     const order = await Order.findById(orderId).populate(
+//       "orderedItems.product"
+//     );
+//     if (!order) {
+//       return res
+//         .status(HttpStatus.NOT_FOUND)
+//         .json({ message: Messages.ORDER_NOT_FOUND });
+//     }
+
+//     if (order.status === "Failed") {
+//       return res
+//         .status(HttpStatus.BAD_REQUEST)
+//         .json({ message: Messages.FAILED_ORDERS });
+//     }
+
+//     let refundAmount = 0;
+
+//     if (fullOrder) {
+//       if (
+//         order.status.toLowerCase() === "delivered" ||
+//         order.status.toLowerCase() === "cancelled"
+//       ) {
+//         return res
+//           .status(HttpStatus.BAD_REQUEST)
+//           .json({ message: Messages.ORDER_CANNOT_BE_CANCELLED });
+//       }
+
+//       for (const item of order.orderedItems) {
+//         item.status = "Cancelled";
+//         await Product.findByIdAndUpdate(item.product._id, {
+//           $inc: { quantity: item.quantity },
+//         });
+//       }
+
+//       order.status = "Cancelled";
+//       refundAmount = order.finalAmount;
+//     } else {
+//       if (!mongoose.Types.ObjectId.isValid(productId)) {
+//         return res
+//           .status(HttpStatus.BAD_REQUEST)
+//           .json({ message: Messages.INVALID_PRODUCTID });
+//       }
+
+//       const item = order.orderedItems.find(
+//         (item) => item.product._id.toString() === productId
+//       );
+//       if (!item) {
+//         return res
+//           .status(HttpStatus.NOT_FOUND)
+//           .json({ message: Messages.PRODUCT_NOT_FOUND });
+//       }
+
+//       if (
+//         item.status &&
+//         (item.status.toLowerCase() === "delivered" ||
+//           item.status.toLowerCase() === "cancelled")
+//       ) {
+//         return res
+//           .status(HttpStatus.BAD_REQUEST)
+//           .json({ message: Messages.ITEM_CANNOT_BE_CANCELLED });
+//       }
+
+//       item.status = "Cancelled";
+//       await Product.findByIdAndUpdate(item.product._id, {
+//         $inc: { quantity: item.quantity },
+//       });
+
+
+//       // Calculate the total price before discounts
+//       const totalPriceBeforeDiscount = order.orderedItems.reduce(
+//         (sum, item) => sum + item.price * item.quantity,
+//         0
+//       );
+
+//       // Calculate the item's contribution to the total price
+//       const itemTotal = item.price * item.quantity;
+
+//       // Proportionally distribute the coupon discount
+//       const effectiveDiscount = order.coupon.applied
+//         ? order.coupon.discountAmount
+//         : 0;
+//       const itemDiscount =
+//         totalPriceBeforeDiscount > 0
+//           ? (itemTotal / totalPriceBeforeDiscount) * effectiveDiscount
+//           : 0;
+
+//       // Calculate refund amount (item's price after discount)
+//       refundAmount = itemTotal - itemDiscount;
+
+//       const remainingItems = order.orderedItems.filter(
+//         (item) => item.status !== "Cancelled"
+//       );
+
+//       if (remainingItems.length === 0) {
+//         order.status = "Cancelled";
+//         order.finalAmount = 0;
+//         order.totalPrice = 0;
+//       } else {
+//         // Recalculate totalPrice and finalAmount for remaining items
+//         order.totalPrice = remainingItems.reduce(
+//           (sum, item) => sum + item.price * item.quantity,
+//           0
+//         );
+
+//         // Recalculate proportional discount for remaining items
+//         const remainingDiscount =
+//           totalPriceBeforeDiscount > 0
+//             ? (order.totalPrice / totalPriceBeforeDiscount) * effectiveDiscount
+//             : 0;
+//         order.finalAmount = order.totalPrice - remainingDiscount;
+//       }
+//     }
+
+//     await order.save();
+
+//     if (refundAmount > 0) {
+//       await User.findByIdAndUpdate(userId, {
+//         $inc: { wallet: refundAmount },
+//         $push: {
+//           walletTransactions: {
+//             type: "credit",
+//             amount: refundAmount,
+//             description: `Refund for cancelled item in order #${order.orderId}`,
+//             orderId: order._id,
+//           },
+//         },
+//       });
+//     }
+
+//     return res.json({
+//       success: true,
+//       message: `Item cancelled successfully. ₹${refundAmount.toFixed(
+//         2
+//       )} refunded to wallet.`,
+//     });
+//   } catch (error) {
+//     console.error("Error cancelling order:", error);
+//     res
+//       .status(HttpStatus.SERVER_ERROR)
+//       .json({ message: Messages.SERVER_ERROR });
+//   }
+// };
+
 const cancelOrder = async (req, res) => {
   try {
     const { orderId, productId, fullOrder, cancelReason } = req.body;
@@ -890,13 +1045,6 @@ const cancelOrder = async (req, res) => {
         $inc: { quantity: item.quantity },
       });
 
-
-      // Calculate the total price before discounts
-      const totalPriceBeforeDiscount = order.orderedItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-
       // Calculate the item's contribution to the total price
       const itemTotal = item.price * item.quantity;
 
@@ -904,6 +1052,10 @@ const cancelOrder = async (req, res) => {
       const effectiveDiscount = order.coupon.applied
         ? order.coupon.discountAmount
         : 0;
+      const totalPriceBeforeDiscount = order.orderedItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
       const itemDiscount =
         totalPriceBeforeDiscount > 0
           ? (itemTotal / totalPriceBeforeDiscount) * effectiveDiscount
@@ -918,21 +1070,31 @@ const cancelOrder = async (req, res) => {
 
       if (remainingItems.length === 0) {
         order.status = "Cancelled";
-        order.finalAmount = 0;
-        order.totalPrice = 0;
+        // Do NOT reset totalPrice and finalAmount
+        // order.totalPrice and order.finalAmount should retain their original values
       } else {
-        // Recalculate totalPrice and finalAmount for remaining items
-        order.totalPrice = remainingItems.reduce(
+        // Recalculate finalAmount for remaining items, but keep totalPrice as is
+        const remainingTotal = remainingItems.reduce(
           (sum, item) => sum + item.price * item.quantity,
           0
         );
-
-        // Recalculate proportional discount for remaining items
         const remainingDiscount =
           totalPriceBeforeDiscount > 0
-            ? (order.totalPrice / totalPriceBeforeDiscount) * effectiveDiscount
+            ? (remainingTotal / totalPriceBeforeDiscount) * effectiveDiscount
             : 0;
-        order.finalAmount = order.totalPrice - remainingDiscount;
+        order.finalAmount = remainingTotal - remainingDiscount;
+      }
+    }
+
+    // Add cancel reason to order or item
+    if (fullOrder) {
+      order.cancelReason = cancelReason;
+    } else {
+      const item = order.orderedItems.find(
+        (item) => item.product._id.toString() === productId
+      );
+      if (item) {
+        item.cancelReason = cancelReason;
       }
     }
 
@@ -1259,6 +1421,89 @@ const downloadInvoice = async (req, res) => {
   }
 };
 
+// const returnOrder = async (req, res) => {
+//   try {
+//     const { orderId, productId, returnReason } = req.body;
+//     const userId = req.session.user?._id;
+
+//     if (
+//       !mongoose.Types.ObjectId.isValid(orderId) ||
+//       !mongoose.Types.ObjectId.isValid(productId)
+//     ) {
+//       return res
+//         .status(HttpStatus.BAD_REQUEST)
+//         .json({ success: false, message: Messages.INVALID_PRODUCTID });
+//     }
+//     if (!returnReason || returnReason.trim() === "") {
+//       return res
+//         .status(HttpStatus.BAD_REQUEST)
+//         .json({ success: false, message: Messages.RETURN_REASON });
+//     }
+
+//     const order = await Order.findOne({ _id: orderId }).populate(
+//       "orderedItems.product"
+//     );
+//     if (!order) {
+//       return res
+//         .status(HttpStatus.NOT_FOUND)
+//         .json({ success: false, message: Messages.ORDER_NOT_FOUND });
+//     }
+
+//     const item = order.orderedItems.find(
+//       (item) => item.product._id.toString() === productId
+//     );
+//     if (!item) {
+//       return res
+//         .status(HttpStatus.NOT_FOUND)
+//         .json({ success: false, message: Messages.PRODUCT_NOT_FOUND });
+//     }
+
+//     if (!item.status || item.status.toLowerCase() !== "delivered") {
+//       return res
+//         .status(HttpStatus.BAD_REQUEST)
+//         .json({ success: false, message: Messages.DELIVERED_ITEMS_RETURNED });
+//     }
+    
+//     if (
+//       item.status.toLowerCase() === "returned" ||
+//       item.status.toLowerCase() === "return request"
+//     ) {
+//       return res
+//         .status(HttpStatus.BAD_REQUEST)
+//         .json({ success: false, message: Messages.PENDING_RETURN_REQUEST });
+//     }
+
+//     item.status = "Return Request";
+//     item.returnReason = returnReason;
+
+//     const allItemsReturned = order.orderedItems.every(
+//       (item) => item.status.toLowerCase() === "returned"
+//     );
+//     const allItemsReturnRequested = order.orderedItems.every(
+//       (item) =>
+//         item.status.toLowerCase() === "return request" ||
+//         item.status.toLowerCase() === "returned"
+//     );
+//     if (allItemsReturned) {
+//       order.status = "Returned";
+//     } else if (allItemsReturnRequested) {
+//       order.status = "Return Request";
+//     }
+
+//     await order.save();
+
+//     return res.json({
+//       success: true,
+//       message: `Return request processed successfully. credited to wallet.`,
+//     });
+//   } catch (error) {
+//     console.error("Return request error:", error);
+//     return res
+//       .status(HttpStatus.SERVER_ERROR)
+//       .json({ success: false, message: Messages.SERVER_ERROR });
+//   }
+// };
+
 const returnOrder = async (req, res) => {
   try {
     const { orderId, productId, returnReason } = req.body;
@@ -1332,7 +1577,7 @@ const returnOrder = async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Return request processed successfully. credited to wallet.`,
+      message: `Return request processed successfully.`,
     });
   } catch (error) {
     console.error("Return request error:", error);
