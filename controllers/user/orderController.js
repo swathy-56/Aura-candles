@@ -1023,7 +1023,9 @@ const downloadInvoice = async (req, res) => {
     const userId = req.session.user?._id;
 
     if (!userId) {
-      return res.status(HttpStatus.UNAUTHORIZED).send(Messages.USER_NOT_FOUND);
+      return res.status(HttpStatus.UNAUTHORIZED).send(
+        Messages.USER_NOT_FOUND
+      );
     }
 
     const order = await Order.findOne({ _id: orderId, userId }).populate({
@@ -1032,7 +1034,9 @@ const downloadInvoice = async (req, res) => {
     });
 
     if (!order) {
-      return res.status(HttpStatus.NOT_FOUND).send(Messages.ORDER_NOT_FOUND);
+      return res.status(HttpStatus.NOT_FOUND).send(
+        Messages.ORDER_NOT_FOUND
+      );
     }
 
     if (order.status === "Cancelled" || order.status === "Failed") {
@@ -1047,15 +1051,70 @@ const downloadInvoice = async (req, res) => {
 
     doc.pipe(res);
 
-    const effectiveDiscount = order.totalPrice - order.finalAmount;
+    const effectiveDiscount = Number(
+      (order.totalPrice - order.finalAmount).toFixed(2)
+    );
 
-    const totalPrice = order.totalPrice;
-    const productDiscounts = order.orderedItems.map((item) => {
-      const itemTotal = item.quantity * item.price;
-      const itemDiscount =
-        totalPrice > 0 ? (itemTotal / totalPrice) * effectiveDiscount : 0;
-      return Math.round(itemDiscount * 100) / 100;
+    // Calculate item discounts and totals to match order summary
+    const totalPrice = Number(order.totalPrice.toFixed(2));
+    const finalAmount = Number(order.finalAmount.toFixed(2));
+    const productDiscounts = [];
+    const productTotals = [];
+    let accumulatedDiscount = 0;
+
+    order.orderedItems.forEach((item, index) => {
+      const itemTotal = Number((item.quantity * item.price).toFixed(2));
+      let itemDiscount;
+
+      if (index === order.orderedItems.length - 1) {
+        // For the last item, assign remaining discount to match effectiveDiscount
+        itemDiscount = Number(
+          (effectiveDiscount - accumulatedDiscount).toFixed(2)
+        );
+      } else {
+        // Proportional discount based on item total
+        itemDiscount = Number(
+          (
+            (itemTotal / totalPrice) * effectiveDiscount
+          ).toFixed(2)
+        );
+        accumulatedDiscount = Number(
+          (accumulatedDiscount + itemDiscount).toFixed(2)
+        );
+      }
+
+      const discountedTotal = Number(
+        (itemTotal - itemDiscount).toFixed(2)
+      );
+
+      productDiscounts.push(itemDiscount);
+      productTotals.push(discountedTotal);
     });
+
+    // Verify that discounted totals sum to finalAmount
+    const sumDiscountedTotals = Number(
+      productTotals.reduce((sum, total) => sum + total, 0).toFixed(2)
+    );
+    if (sumDiscountedTotals !== finalAmount) {
+      // Adjust the last item's total to ensure sum matches finalAmount
+      const adjustment = Number(
+        (finalAmount - sumDiscountedTotals).toFixed(2)
+      );
+      productTotals[productTotals.length - 1] = Number(
+        (
+          productTotals[productTotals.length - 1] + adjustment
+        ).toFixed(2)
+      );
+      // Adjust the last discount accordingly
+      const lastItemTotal =
+        order.orderedItems[order.orderedItems.length - 1].quantity *
+        order.orderedItems[order.orderedItems.length - 1].price;
+      productDiscounts[productDiscounts.length - 1] = Number(
+        (
+          lastItemTotal - productTotals[productTotals.length - 1]
+        ).toFixed(2)
+      );
+    }
 
     doc.rect(0, 0, doc.page.width, 80).fill("#1a3c34");
     doc
@@ -1150,9 +1209,8 @@ const downloadInvoice = async (req, res) => {
 
     let yPosition = tableTop + 25;
     order.orderedItems.forEach((item, index) => {
-      const itemTotal = item.quantity * item.price;
       const itemDiscount = productDiscounts[index];
-      const discountedTotal = itemTotal - itemDiscount;
+      const discountedTotal = productTotals[index];
 
       doc
         .fontSize(12)
@@ -1168,7 +1226,7 @@ const downloadInvoice = async (req, res) => {
           { width: colWidths.qty, align: "center" }
         )
         .text(
-          `₹${item.price}`,
+          `₹${item.price.toFixed(2)}`,
           tableLeft + colWidths.product + colWidths.qty,
           yPosition,
           { width: colWidths.price, align: "center" }
@@ -1195,7 +1253,7 @@ const downloadInvoice = async (req, res) => {
         .lineTo(tableLeft + 460, yPosition + 20)
         .stroke();
 
-      yPosition += 20;
+      yPosition += 25;
     });
 
     let currentX = tableLeft;
@@ -1225,12 +1283,12 @@ const downloadInvoice = async (req, res) => {
       .fontSize(12)
       .font("Helvetica")
       .fillColor("#000000")
-      .text(`Subtotal: ₹${order.totalPrice}`, HttpStatus.BAD_REQUEST, doc.y, {
+      .text(`Subtotal: ₹${totalPrice.toFixed(2)}`, 400, doc.y, {
         align: "right",
       })
       .text(`Discount: ₹${effectiveDiscount.toFixed(2)}`, { align: "right" })
       .text(`Shipping: Free`, { align: "right" })
-      .text(`Total: ₹${order.finalAmount}`, { align: "right" });
+      .text(`Total: ₹${finalAmount.toFixed(2)}`, { align: "right" });
 
     doc.moveDown(2);
     doc
